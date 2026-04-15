@@ -1,0 +1,237 @@
+#!/usr/bin/env bash
+#
+# Apollo Linux — apollo-plugin
+# CLI tool to manage Apollo Shell plugins
+#
+# Usage:
+#   apollo-plugin list              List all available plugins
+#   apollo-plugin list --installed  List installed plugins
+#   apollo-plugin install <name>    Install a plugin
+#   apollo-plugin remove <name>     Remove a plugin
+#   apollo-plugin info <name>       Show plugin details
+#   apollo-plugin update            Update all installed plugins
+#
+# Plugins are QML components placed in:
+#   ~/.local/share/apollo-shell/plugins/<name>/
+# Official plugins ship in:
+#   /usr/share/apollo/shell/plugins/<name>/
+
+set -euo pipefail
+
+# ── Paths ────────────────────────────────────────────────────────────────────
+SYSTEM_PLUGINS_DIR="/usr/share/apollo/shell/plugins"
+USER_PLUGINS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/apollo-shell/plugins"
+SHELL_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/apollo-shell/apollo-shell.json"
+OFFICIAL_PLUGIN_INDEX="/usr/share/apollo/shell/plugin-index.json"
+PLUGIN_LOG="${XDG_CACHE_HOME:-$HOME/.cache}/apollo-shell/plugin.log"
+
+# ── Colors ───────────────────────────────────────────────────────────────────
+C_RESET='\033[0m'
+C_BOLD='\033[1m'
+C_BLUE='\033[34m'
+C_CYAN='\033[36m'
+C_GREEN='\033[32m'
+C_YELLOW='\033[33m'
+C_RED='\033[31m'
+C_GRAY='\033[90m'
+
+info()    { echo -e "${C_CYAN}󰆡${C_RESET}  $*"; }
+ok()      { echo -e "${C_GREEN}${C_RESET}  $*"; }
+warn()    { echo -e "${C_YELLOW}󰀦${C_RESET}  $*"; }
+error()   { echo -e "${C_RED}󰅚${C_RESET}  $*" >&2; }
+header()  { echo -e "\n${C_BOLD}${C_BLUE}$*${C_RESET}"; }
+
+# ── Helper: reload Apollo Shell ───────────────────────────────────────────────
+reload_shell() {
+    if pgrep -x quickshell > /dev/null 2>&1; then
+        apollo-shell-action reload 2>/dev/null && info "Apollo Shell reloaded."
+    fi
+}
+
+# ── Helper: read JSON field (requires python3) ────────────────────────────────
+json_get() {
+    local file="$1" key="$2"
+    python3 -c "import json,sys; d=json.load(open('$file')); print(d.get('$key',''))" 2>/dev/null || echo ""
+}
+
+# ── Commands ─────────────────────────────────────────────────────────────────
+
+cmd_list() {
+    local installed_only=false
+    [[ "${1:-}" == "--installed" ]] && installed_only=true
+
+    header "Apollo Shell Plugins"
+
+    if ! $installed_only; then
+        echo -e "${C_GRAY}Official plugins:${C_RESET}"
+        for dir in "$SYSTEM_PLUGINS_DIR"/*/; do
+            [[ -d "$dir" ]] || continue
+            local name
+            name=$(basename "$dir")
+            local desc=""
+            [[ -f "$dir/plugin.json" ]] && desc=$(json_get "$dir/plugin.json" "description")
+
+            local user_dir="$USER_PLUGINS_DIR/$name"
+            local status="${C_GRAY}available${C_RESET}"
+            [[ -d "$user_dir" || -L "$user_dir" ]] && status="${C_GREEN}installed${C_RESET}"
+
+            printf "  ${C_BOLD}%-22s${C_RESET} %s  %b\n" "$name" "$desc" "$status"
+        done
+        echo ""
+    fi
+
+    if [[ -d "$USER_PLUGINS_DIR" ]]; then
+        echo -e "${C_GRAY}Installed (user):${C_RESET}"
+        for dir in "$USER_PLUGINS_DIR"/*/; do
+            [[ -d "$dir" ]] || continue
+            local name
+            name=$(basename "$dir")
+            local desc=""
+            [[ -f "$dir/plugin.json" ]] && desc=$(json_get "$dir/plugin.json" "description")
+            printf "  ${C_BOLD}%-22s${C_RESET} %s\n" "$name" "$desc"
+        done
+    fi
+}
+
+cmd_install() {
+    local name="${1:-}"
+    [[ -z "$name" ]] && { error "Usage: apollo-plugin install <name>"; exit 1; }
+
+    local src="$SYSTEM_PLUGINS_DIR/$name"
+    local dst="$USER_PLUGINS_DIR/$name"
+
+    if [[ ! -d "$src" ]]; then
+        error "Plugin '${name}' not found in official plugin directory."
+        info  "Available plugins:"
+        ls "$SYSTEM_PLUGINS_DIR" 2>/dev/null | sed 's/^/  /'
+        exit 1
+    fi
+
+    if [[ -d "$dst" ]]; then
+        warn "Plugin '${name}' is already installed. Use 'update' to refresh."
+        exit 0
+    fi
+
+    mkdir -p "$USER_PLUGINS_DIR"
+    cp -r "$src" "$dst"
+    ok "Plugin '${name}' installed."
+
+    # Enable in config
+    if [[ -f "$SHELL_CONFIG" ]]; then
+        python3 - "$SHELL_CONFIG" "$name" <<'EOF'
+import json, sys
+path, name = sys.argv[1], sys.argv[2]
+with open(path) as f: cfg = json.load(f)
+cfg.setdefault("plugins", {}).setdefault(name, {})["enabled"] = True
+with open(path, "w") as f: json.dump(cfg, f, indent=2)
+EOF
+        ok "Plugin enabled in apollo-shell.json"
+    fi
+
+    reload_shell
+}
+
+cmd_remove() {
+    local name="${1:-}"
+    [[ -z "$name" ]] && { error "Usage: apollo-plugin remove <name>"; exit 1; }
+
+    local dst="$USER_PLUGINS_DIR/$name"
+    if [[ ! -d "$dst" ]]; then
+        error "Plugin '${name}' is not installed (or is a system plugin that cannot be removed)."
+        exit 1
+    fi
+
+    rm -rf "$dst"
+    ok "Plugin '${name}' removed."
+
+    # Disable in config
+    if [[ -f "$SHELL_CONFIG" ]]; then
+        python3 - "$SHELL_CONFIG" "$name" <<'EOF'
+import json, sys
+path, name = sys.argv[1], sys.argv[2]
+with open(path) as f: cfg = json.load(f)
+if name in cfg.get("plugins", {}):
+    cfg["plugins"][name]["enabled"] = False
+with open(path, "w") as f: json.dump(cfg, f, indent=2)
+EOF
+    fi
+
+    reload_shell
+}
+
+cmd_info() {
+    local name="${1:-}"
+    [[ -z "$name" ]] && { error "Usage: apollo-plugin info <name>"; exit 1; }
+
+    local dir="$SYSTEM_PLUGINS_DIR/$name"
+    [[ -d "$USER_PLUGINS_DIR/$name" ]] && dir="$USER_PLUGINS_DIR/$name"
+
+    if [[ ! -d "$dir" ]]; then
+        error "Plugin '${name}' not found."
+        exit 1
+    fi
+
+    header "Plugin: $name"
+    if [[ -f "$dir/plugin.json" ]]; then
+        python3 - "$dir/plugin.json" <<'EOF'
+import json, sys
+with open(sys.argv[1]) as f: p = json.load(f)
+print(f"  Name:        {p.get('name', '-')}")
+print(f"  Version:     {p.get('version', '-')}")
+print(f"  Description: {p.get('description', '-')}")
+print(f"  Author:      {p.get('author', '-')}")
+print(f"  License:     {p.get('license', '-')}")
+EOF
+    else
+        echo "  (no plugin.json found)"
+    fi
+
+    local installed="${C_RED}no${C_RESET}"
+    [[ -d "$USER_PLUGINS_DIR/$name" ]] && installed="${C_GREEN}yes${C_RESET}"
+    echo -e "  Installed:   $installed"
+}
+
+cmd_update() {
+    header "Updating installed plugins..."
+    local updated=0
+    for dir in "$USER_PLUGINS_DIR"/*/; do
+        [[ -d "$dir" ]] || continue
+        local name
+        name=$(basename "$dir")
+        local src="$SYSTEM_PLUGINS_DIR/$name"
+        if [[ -d "$src" ]]; then
+            rm -rf "$dir"
+            cp -r "$src" "$dir"
+            ok "Updated: $name"
+            ((updated++))
+        fi
+    done
+    [[ $updated -eq 0 ]] && info "All plugins up to date."
+    reload_shell
+}
+
+usage() {
+    echo -e "${C_BOLD}apollo-plugin${C_RESET} — Apollo Shell plugin manager"
+    echo ""
+    echo "Usage: apollo-plugin <command> [args]"
+    echo ""
+    echo "Commands:"
+    echo "  list [--installed]   List available / installed plugins"
+    echo "  install <name>       Install a plugin"
+    echo "  remove <name>        Remove an installed plugin"
+    echo "  info <name>          Show plugin details"
+    echo "  update               Update all installed plugins"
+    echo ""
+    echo "Official plugins: weather, media-player, calendar-popup, cpu-graph, notes"
+}
+
+# ── Main ─────────────────────────────────────────────────────────────────────
+case "${1:-help}" in
+    list)    cmd_list    "${2:-}" ;;
+    install) cmd_install "${2:-}" ;;
+    remove)  cmd_remove  "${2:-}" ;;
+    info)    cmd_info    "${2:-}" ;;
+    update)  cmd_update ;;
+    help|-h|--help) usage ;;
+    *) error "Unknown command: $1"; usage; exit 1 ;;
+esac

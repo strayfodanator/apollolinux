@@ -1,0 +1,124 @@
+#!/bin/bash
+#
+# Apollo Desktop — autostart script
+# Runs on Openbox session start via ~/.config/openbox/autostart
+#
+# This script brings up the full Apollo Desktop environment:
+#   - picom (compositor)
+#   - Apollo Shell panels (QuickShell)
+#   - System services (dunst, nm-applet, etc.)
+#   - Theming setup
+
+export XDG_DATA_DIRS="/usr/share:$HOME/.local/share:$XDG_DATA_DIRS"
+export QT_QPA_PLATFORMTHEME=qt5ct
+export GTK_THEME=Apollo-Dark
+export XCURSOR_THEME=Bibata-Modern-Classic
+export XCURSOR_SIZE=24
+
+# ── Wait helper ─────────────────────────────────────────────────────────────
+wait_for() {
+    local cmd="$1"
+    local max=20
+    local i=0
+    while ! pgrep -x "$cmd" > /dev/null 2>&1 && [ $i -lt $max ]; do
+        sleep 0.1
+        ((i++))
+    done
+}
+
+# ── Set cursor theme ─────────────────────────────────────────────────────────
+xsetroot -cursor_name left_ptr &
+
+# ── Set DPI (96 default, adjustable via apollo-control) ─────────────────────
+APOLLO_DPI=$(cat "$HOME/.config/apollo/dpi" 2>/dev/null || echo "96")
+xrandr --dpi "$APOLLO_DPI" &
+echo "Xft.dpi: $APOLLO_DPI" | xrdb -merge &
+
+# ── Set wallpaper ────────────────────────────────────────────────────────────
+WALLPAPER=$(cat "$HOME/.config/apollo/wallpaper" 2>/dev/null)
+if [ -z "$WALLPAPER" ] || [ ! -f "$WALLPAPER" ]; then
+    WALLPAPER="/usr/share/apollo/wallpapers/apollo-default.png"
+fi
+feh --no-fehbg --bg-fill "$WALLPAPER" &
+
+# ── Compositor (picom) ───────────────────────────────────────────────────────
+# Check if GPU supports GLX backend (set by Calamares at install time)
+PICOM_BACKEND=$(cat "$HOME/.config/apollo/picom-backend" 2>/dev/null || echo "xrender")
+if pgrep -x picom > /dev/null; then
+    pkill picom
+    sleep 0.3
+fi
+picom --config "$HOME/.config/picom/picom.conf" \
+      --backend "$PICOM_BACKEND" \
+      --daemon &
+
+# ── Notification daemon (dunst) ──────────────────────────────────────────────
+pkill dunst 2>/dev/null
+dunst -config "$HOME/.config/dunst/dunstrc" &
+
+# ── PipeWire / Audio ─────────────────────────────────────────────────────────
+if ! pgrep -x pipewire > /dev/null; then
+    /usr/bin/pipewire &
+    sleep 0.3
+    /usr/bin/pipewire-pulse &
+    /usr/bin/wireplumber &
+fi
+
+# ── Polkit agent ─────────────────────────────────────────────────────────────
+/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
+
+# ── NetworkManager applet ────────────────────────────────────────────────────
+nm-applet --indicator &
+
+# ── Bluetooth applet ─────────────────────────────────────────────────────────
+blueman-applet &
+
+# ── GNOME Keyring (for apps that need it) ────────────────────────────────────
+if which gnome-keyring-daemon > /dev/null 2>&1; then
+    eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh) &
+    export SSH_AUTH_SOCK
+fi
+
+# ── Power management (xfce4-power-manager or upower) ─────────────────────────
+if which xfce4-power-manager > /dev/null 2>&1; then
+    xfce4-power-manager &
+fi
+
+# ── Input method ─────────────────────────────────────────────────────────────
+# ibus-daemon &  # Uncomment if using IBus
+
+# ── Apollo Shell (QuickShell-based panels) ───────────────────────────────────
+# Wait a moment for Openbox to fully initialize before starting panels
+sleep 0.5
+
+APOLLO_SHELL_CONFIG="$HOME/.config/apollo-shell/apollo-shell.json"
+if [ ! -f "$APOLLO_SHELL_CONFIG" ]; then
+    # First run: copy default config
+    mkdir -p "$HOME/.config/apollo-shell"
+    cp "/usr/share/apollo/shell/apollo-shell.json" "$APOLLO_SHELL_CONFIG"
+fi
+
+pkill quickshell 2>/dev/null
+sleep 0.2
+quickshell -config "/usr/share/apollo/shell/main.qml" \
+           -override "configFile=$APOLLO_SHELL_CONFIG" &
+
+wait_for quickshell
+
+# ── ULauncher (kept running in background for fast launch) ───────────────────
+ulauncher --hide-window &
+
+# ── Apollo Welcome (first boot only) ─────────────────────────────────────────
+WELCOME_FLAG="$HOME/.config/apollo/.welcome-shown"
+if [ ! -f "$WELCOME_FLAG" ]; then
+    sleep 2  # Let desktop settle
+    apollo-welcome &
+    touch "$WELCOME_FLAG"
+fi
+
+# ── Screen locker daemon ─────────────────────────────────────────────────────
+if which xss-lock > /dev/null 2>&1; then
+    xss-lock -- xscreensaver-command -lock &
+fi
+
+echo "Apollo Desktop started at $(date)" >> /tmp/apollo-session.log

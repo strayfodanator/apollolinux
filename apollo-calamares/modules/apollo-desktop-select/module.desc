@@ -1,0 +1,12 @@
+---
+# Apollo Linux — Calamares module descriptor for apollo-desktop-select
+type: "job"
+name: "apollo-desktop-select"
+interface: "python"
+script: "main.py"
+timeout: 600
+
+# Reads apollo_desktop_chosen (or apollo_desktop_default) from GlobalStorage.
+# Installs Apollo Desktop (openbox+apollo-shell+lightdm) or
+# Hyprland (hyprland+ax-shell+sddm) into the target.
+# Also configures GTK/Qt theming and environment variables.

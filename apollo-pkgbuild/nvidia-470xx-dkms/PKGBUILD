@@ -1,0 +1,97 @@
+# Maintainer: Apollo Linux Team <dev@apollolinux.org>
+# Based on: nvidia-470xx-dkms (AUR)
+#
+# Apollo Linux build of nvidia-470xx-dkms
+# Supports: GTX 900 series, GTX 10xx series (Pascal), GTX 16xx partially
+
+pkgbase=apollo-nvidia-470xx-dkms
+pkgname=(apollo-nvidia-470xx-dkms apollo-nvidia-470xx-utils)
+pkgver=470.256.02
+pkgrel=5
+pkgdesc="NVIDIA legacy (470xx) driver — GTX 900/1000 series, maintained by Apollo Linux"
+arch=('x86_64')
+url="https://www.nvidia.com/"
+license=('custom:NVIDIA')
+makedepends=('dkms')
+options=('!strip')
+
+_src_url="https://us.download.nvidia.com/XFree86/Linux-x86_64/${pkgver}"
+source=(
+    "${_src_url}/NVIDIA-Linux-x86_64-${pkgver}.run"
+    # Patches for kernel 6.x (less extensive than 390xx, driver still gets updates)
+    "0001-kernel-6.8-nv-drm-gem.patch"
+    "0002-kernel-6.9-vm-flags.patch"
+    "0003-kernel-6.12-class-create.patch"
+    # Apollo configs
+    "apollo-nvidia-470xx-drm-outputclass.conf"
+    "apollo-nvidia-470xx-modprobe.conf"
+)
+
+sha256sums=(
+    'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP'
+)
+
+prepare() {
+    sh "NVIDIA-Linux-x86_64-${pkgver}.run" --extract-only --target "NVIDIA-Linux-x86_64-${pkgver}"
+
+    cd "NVIDIA-Linux-x86_64-${pkgver}"
+
+    for _patch in "${srcdir}/"[0-9][0-9][0-9][0-9]-*.patch; do
+        echo ">> Applying: $(basename "${_patch}")"
+        patch -Np1 < "${_patch}" || true
+    done
+}
+
+package_apollo-nvidia-470xx-dkms() {
+    pkgdesc="NVIDIA (470xx) DKMS kernel module — Apollo Linux build"
+    depends=("apollo-nvidia-470xx-utils=${pkgver}" 'dkms' 'libglvnd')
+    provides=("nvidia-470xx-dkms=${pkgver}" 'NVIDIA-MODULE')
+    conflicts=('nvidia-470xx-dkms' 'nvidia-dkms' 'apollo-nvidia-390xx-dkms')
+
+    local _src="NVIDIA-Linux-x86_64-${pkgver}"
+    local _dest="${pkgdir}/usr/src/nvidia-${pkgver}"
+
+    install -dm755 "${_dest}"
+    cp -dr --preserve=mode "${srcdir}/${_src}/kernel/" "${_dest}/"
+
+    cat > "${_dest}/dkms.conf" <<EOF
+PACKAGE_NAME="nvidia"
+PACKAGE_VERSION="${pkgver}"
+MAKE="make -j\$(nproc) KERNEL_UNAME=\${kernelver}"
+CLEAN="make clean"
+BUILT_MODULE_NAME[0]="nvidia"
+DEST_MODULE_LOCATION[0]="/kernel/drivers/video"
+BUILT_MODULE_NAME[1]="nvidia-modeset"
+DEST_MODULE_LOCATION[1]="/kernel/drivers/video"
+BUILT_MODULE_NAME[2]="nvidia-drm"
+DEST_MODULE_LOCATION[2]="/kernel/drivers/video"
+BUILT_MODULE_NAME[3]="nvidia-uvm"
+DEST_MODULE_LOCATION[3]="/kernel/drivers/video"
+AUTOINSTALL="yes"
+EOF
+
+    install -Dm644 "${srcdir}/apollo-nvidia-470xx-drm-outputclass.conf" \
+        "${pkgdir}/usr/share/X11/xorg.conf.d/10-apollo-nvidia-470xx-drm.conf"
+}
+
+package_apollo-nvidia-470xx-utils() {
+    pkgdesc="NVIDIA (470xx) userspace utilities — Apollo Linux build"
+    depends=('xorg-server' 'libglvnd' 'egl-wayland')
+    provides=("nvidia-470xx-utils=${pkgver}" "nvidia-utils=${pkgver}" 'libgl' 'opengl-driver')
+    conflicts=('nvidia-470xx-utils' 'nvidia-utils' 'apollo-nvidia-390xx-utils')
+
+    local _src="${srcdir}/NVIDIA-Linux-x86_64-${pkgver}"
+
+    install -Dm755 "${_src}/nvidia-settings" "${pkgdir}/usr/bin/nvidia-settings"
+    install -Dm755 "${_src}/nvidia-smi"      "${pkgdir}/usr/bin/nvidia-smi"
+    install -Dm755 "${_src}/nvidia_drv.so"   "${pkgdir}/usr/lib/xorg/modules/drivers/nvidia_drv.so"
+
+    install -Dm644 "${_src}/nvidia_icd.json" \
+        "${pkgdir}/usr/share/vulkan/icd.d/nvidia_icd.json"
+
+    install -Dm644 "${srcdir}/apollo-nvidia-470xx-modprobe.conf" \
+        "${pkgdir}/usr/lib/modprobe.d/apollo-nvidia-470xx.conf"
+
+    install -Dm644 "${_src}/nvidia-persistenced.service" \
+        "${pkgdir}/usr/lib/systemd/system/nvidia-persistenced.service"
+}

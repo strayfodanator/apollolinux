@@ -1,0 +1,582 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Apollo Desktop — Openbox Configuration (rc.xml)
+  
+  This is the default configuration for Apollo Desktop, an enhanced fork of
+  Openbox designed to feel like a complete desktop environment while remaining
+  extremely lightweight.
+  
+  Key Apollo additions over vanilla Openbox:
+  - Snap zones (edge tiling via keybinds and drag)
+  - Apollo Shell integration keybinds
+  - Virtual desktop names and pager integration
+  - Pre-configured app keybinds
+-->
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+
+  <resistance>
+    <strength>10</strength>
+    <screen_edge_strength>20</screen_edge_strength>
+  </resistance>
+
+  <focus>
+    <focusNew>yes</focusNew>
+    <followMouse>no</followMouse>
+    <focusLast>yes</focusLast>
+    <underMouse>no</underMouse>
+    <focusDelay>200</focusDelay>
+    <raiseOnFocus>no</raiseOnFocus>
+  </focus>
+
+  <placement>
+    <policy>Smart</policy>
+    <center>yes</center>
+    <monitor>Primary</monitor>
+    <primaryMonitor>1</primaryMonitor>
+  </placement>
+
+  <theme>
+    <name>Apollo-Dark</name>
+    <titleLayout>NLIMC</titleLayout>
+    <keepBorder>yes</keepBorder>
+    <animateIconify>no</animateIconify>
+    <font place="ActiveWindow">
+      <name>FiraCode Nerd Font</name>
+      <size>10</size>
+      <weight>Bold</weight>
+      <slant>Normal</slant>
+    </font>
+    <font place="InactiveWindow">
+      <name>FiraCode Nerd Font</name>
+      <size>10</size>
+      <weight>Normal</weight>
+      <slant>Normal</slant>
+    </font>
+    <font place="MenuHeader">
+      <name>FiraCode Nerd Font</name>
+      <size>10</size>
+      <weight>Bold</weight>
+      <slant>Normal</slant>
+    </font>
+    <font place="MenuItem">
+      <name>FiraCode Nerd Font</name>
+      <size>10</size>
+      <weight>Normal</weight>
+      <slant>Normal</slant>
+    </font>
+    <font place="OSD">
+      <name>FiraCode Nerd Font</name>
+      <size>14</size>
+      <weight>Bold</weight>
+      <slant>Normal</slant>
+    </font>
+  </theme>
+
+  <desktops>
+    <number>9</number>
+    <firstdesk>1</firstdesk>
+    <names>
+      <name>Home</name>
+      <name>Browser</name>
+      <name>Code</name>
+      <name>Files</name>
+      <name>Media</name>
+      <name>Chat</name>
+      <name>Games</name>
+      <name>Work</name>
+      <name>Other</name>
+    </names>
+    <popupTime>400</popupTime>
+  </desktops>
+
+  <resize>
+    <drawContents>yes</drawContents>
+    <popupShow>Nonpixel</popupShow>
+    <popupPosition>Center</popupPosition>
+    <popupFixedPosition>
+      <x>10</x>
+      <y>10</y>
+    </popupFixedPosition>
+  </resize>
+
+  <margins>
+    <top>28</top>
+    <bottom>44</bottom>
+    <left>0</left>
+    <right>0</right>
+  </margins>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       KEYBOARD BINDINGS
+       Apollo Desktop uses Super (Win key) as the primary modifier
+       ════════════════════════════════════════════════════════════ -->
+  <keyboard>
+    <chainQuitKey>C-g</chainQuitKey>
+
+    <!-- ── Window Management ─────────────────────────────────────── -->
+    <keybind key="Super-q">
+      <action name="Close"/>
+    </keybind>
+    <keybind key="Super-F4">
+      <action name="Close"/>
+    </keybind>
+
+    <!-- Window snap zones (Apollo feature) -->
+    <keybind key="Super-Left">
+      <action name="UnmaximizeFull"/>
+      <action name="MoveResizeTo">
+        <x>0</x><y>28</y>
+        <width>50%</width><height>100%</height>
+      </action>
+    </keybind>
+    <keybind key="Super-Right">
+      <action name="UnmaximizeFull"/>
+      <action name="MoveResizeTo">
+        <x>50%</x><y>28</y>
+        <width>50%</width><height>100%</height>
+      </action>
+    </keybind>
+    <keybind key="Super-Up">
+      <action name="MaximizeFull"/>
+    </keybind>
+    <keybind key="Super-Down">
+      <action name="Unmaximize"/>
+      <action name="MoveResizeTo">
+        <x>5%</x><y>5%</y>
+        <width>90%</width><height>90%</height>
+      </action>
+    </keybind>
+
+    <!-- Quarter snapping -->
+    <keybind key="Super-1">
+      <!-- Top-left quarter -->
+      <action name="UnmaximizeFull"/>
+      <action name="MoveResizeTo">
+        <x>0</x><y>28</y>
+        <width>50%</width><height>50%</height>
+      </action>
+    </keybind>
+    <keybind key="Super-2">
+      <!-- Top-right quarter -->
+      <action name="UnmaximizeFull"/>
+      <action name="MoveResizeTo">
+        <x>50%</x><y>28</y>
+        <width>50%</width><height>50%</height>
+      </action>
+    </keybind>
+    <keybind key="Super-3">
+      <!-- Bottom-left quarter -->
+      <action name="UnmaximizeFull"/>
+      <action name="MoveResizeTo">
+        <x>0</x><y>50%</y>
+        <width>50%</width><height>50%</height>
+      </action>
+    </keybind>
+    <keybind key="Super-4">
+      <!-- Bottom-right quarter -->
+      <action name="UnmaximizeFull"/>
+      <action name="MoveResizeTo">
+        <x>50%</x><y>50%</y>
+        <width>50%</width><height>50%</height>
+      </action>
+    </keybind>
+
+    <!-- Minimize, maximize, fullscreen -->
+    <keybind key="Super-h">
+      <action name="Iconify"/>
+    </keybind>
+    <keybind key="Super-m">
+      <action name="ToggleMaximizeFull"/>
+    </keybind>
+    <keybind key="F11">
+      <action name="ToggleFullscreen"/>
+    </keybind>
+
+    <!-- Move/Resize with keyboard -->
+    <keybind key="Super-Alt-Left">
+      <action name="MoveRelative"><x>-20</x><y>0</y></action>
+    </keybind>
+    <keybind key="Super-Alt-Right">
+      <action name="MoveRelative"><x>20</x><y>0</y></action>
+    </keybind>
+    <keybind key="Super-Alt-Up">
+      <action name="MoveRelative"><x>0</x><y>-20</y></action>
+    </keybind>
+    <keybind key="Super-Alt-Down">
+      <action name="MoveRelative"><x>0</x><y>20</y></action>
+    </keybind>
+
+    <!-- ── Virtual Desktops ──────────────────────────────────────── -->
+    <keybind key="Super-Tab">
+      <action name="NextWindow">
+        <allDesktops>no</allDesktops>
+        <panels>no</panels>
+        <desktop>no</desktop>
+        <linear>no</linear>
+        <dialog>yes</dialog>
+        <bar>yes</bar>
+        <raise>no</raise>
+        <finalactions>
+          <action name="Focus"/>
+          <action name="Raise"/>
+          <action name="Unshade"/>
+        </finalactions>
+      </action>
+    </keybind>
+    <keybind key="Super-Shift-Tab">
+      <action name="PreviousWindow"/>
+    </keybind>
+    <keybind key="Alt-Tab">
+      <action name="NextWindow">
+        <allDesktops>no</allDesktops>
+        <panels>no</panels>
+        <dialog>yes</dialog>
+        <bar>yes</bar>
+      </action>
+    </keybind>
+
+    <!-- Switch desktops -->
+    <keybind key="Super-Control-Left">
+      <action name="GoToDesktop"><to>previous</to><wrap>yes</wrap></action>
+    </keybind>
+    <keybind key="Super-Control-Right">
+      <action name="GoToDesktop"><to>next</to><wrap>yes</wrap></action>
+    </keybind>
+    <!-- Direct desktop access -->
+    <keybind key="Super-F1"><action name="GoToDesktop"><to>1</to></action></keybind>
+    <keybind key="Super-F2"><action name="GoToDesktop"><to>2</to></action></keybind>
+    <keybind key="Super-F3"><action name="GoToDesktop"><to>3</to></action></keybind>
+    <keybind key="Super-F4"><action name="GoToDesktop"><to>4</to></action></keybind>
+    <keybind key="Super-F5"><action name="GoToDesktop"><to>5</to></action></keybind>
+    <keybind key="Super-F6"><action name="GoToDesktop"><to>6</to></action></keybind>
+    <keybind key="Super-F7"><action name="GoToDesktop"><to>7</to></action></keybind>
+    <keybind key="Super-F8"><action name="GoToDesktop"><to>8</to></action></keybind>
+    <keybind key="Super-F9"><action name="GoToDesktop"><to>9</to></action></keybind>
+
+    <!-- Move window to desktop -->
+    <keybind key="Super-Shift-F1"><action name="SendToDesktop"><to>1</to><follow>yes</follow></action></keybind>
+    <keybind key="Super-Shift-F2"><action name="SendToDesktop"><to>2</to><follow>yes</follow></action></keybind>
+    <keybind key="Super-Shift-F3"><action name="SendToDesktop"><to>3</to><follow>yes</follow></action></keybind>
+
+    <!-- ── Applications ─────────────────────────────────────────── -->
+    <keybind key="Super-Return">
+      <action name="Execute">
+        <command>alacritty</command>
+      </action>
+    </keybind>
+    <keybind key="Super-e">
+      <action name="Execute">
+        <command>thunar</command>
+      </action>
+    </keybind>
+    <keybind key="Super-b">
+      <action name="Execute">
+        <command>xdg-open https://</command>
+      </action>
+    </keybind>
+    <keybind key="Super-space">
+      <action name="Execute">
+        <command>ulauncher-toggle</command>
+      </action>
+    </keybind>
+    <keybind key="Super-a">
+      <!-- Apollo App Menu (from Apollo Shell) -->
+      <action name="Execute">
+        <command>apollo-shell-action toggle-app-menu</command>
+      </action>
+    </keybind>
+    <keybind key="Super-s">
+      <!-- Apollo Sidebar toggle -->
+      <action name="Execute">
+        <command>apollo-shell-action toggle-sidebar</command>
+      </action>
+    </keybind>
+    <keybind key="Super-p">
+      <!-- Apollo Control Center -->
+      <action name="Execute">
+        <command>apollo-control</command>
+      </action>
+    </keybind>
+
+    <!-- Screenshot -->
+    <keybind key="Print">
+      <action name="Execute">
+        <command>flameshot gui</command>
+      </action>
+    </keybind>
+    <keybind key="Super-Print">
+      <action name="Execute">
+        <command>flameshot screen</command>
+      </action>
+    </keybind>
+
+    <!-- Volume (multimedia keys) -->
+    <keybind key="XF86AudioRaiseVolume">
+      <action name="Execute">
+        <command>pactl set-sink-volume @DEFAULT_SINK@ +5%</command>
+      </action>
+    </keybind>
+    <keybind key="XF86AudioLowerVolume">
+      <action name="Execute">
+        <command>pactl set-sink-volume @DEFAULT_SINK@ -5%</command>
+      </action>
+    </keybind>
+    <keybind key="XF86AudioMute">
+      <action name="Execute">
+        <command>pactl set-sink-mute @DEFAULT_SINK@ toggle</command>
+      </action>
+    </keybind>
+    <keybind key="XF86AudioPlay">
+      <action name="Execute">
+        <command>playerctl play-pause</command>
+      </action>
+    </keybind>
+    <keybind key="XF86AudioNext">
+      <action name="Execute">
+        <command>playerctl next</command>
+      </action>
+    </keybind>
+    <keybind key="XF86AudioPrev">
+      <action name="Execute">
+        <command>playerctl previous</command>
+      </action>
+    </keybind>
+
+    <!-- Brightness (laptop) -->
+    <keybind key="XF86MonBrightnessUp">
+      <action name="Execute">
+        <command>brightnessctl set +10%</command>
+      </action>
+    </keybind>
+    <keybind key="XF86MonBrightnessDown">
+      <action name="Execute">
+        <command>brightnessctl set 10%-</command>
+      </action>
+    </keybind>
+
+    <!-- Lock screen -->
+    <keybind key="Super-l">
+      <action name="Execute">
+        <command>xscreensaver-command -lock</command>
+      </action>
+    </keybind>
+
+    <!-- Reload/restart -->
+    <keybind key="Super-Shift-r">
+      <action name="Reconfigure"/>
+    </keybind>
+    <keybind key="Super-Shift-e">
+      <action name="Execute">
+        <command>apollo-session-menu</command>
+      </action>
+    </keybind>
+  </keyboard>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       MOUSE BINDINGS
+       ════════════════════════════════════════════════════════════ -->
+  <mouse>
+    <dragThreshold>8</dragThreshold>
+    <doubleClickTime>300</doubleClickTime>
+    <screenEdgeWarpTime>400</screenEdgeWarpTime>
+    <screenEdgeWarpMouse>false</screenEdgeWarpMouse>
+
+    <context name="Frame">
+      <mousebind button="A-Left" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="A-Left" action="Click">
+        <action name="Focus"/>
+      </mousebind>
+      <mousebind button="A-Left" action="Drag">
+        <action name="Move"/>
+      </mousebind>
+      <mousebind button="A-Right" action="Drag">
+        <action name="Resize"/>
+      </mousebind>
+      <mousebind button="A-Middle" action="Press">
+        <action name="Lower"/>
+        <action name="FocusToBottom"/>
+        <action name="Unfocus"/>
+      </mousebind>
+      <!-- Super+drag to move from anywhere in window -->
+      <mousebind button="Super-Left" action="Drag">
+        <action name="Move"/>
+      </mousebind>
+      <mousebind button="Super-Right" action="Drag">
+        <action name="Resize"/>
+      </mousebind>
+    </context>
+
+    <context name="Titlebar">
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Left" action="Drag">
+        <action name="Move"/>
+      </mousebind>
+      <mousebind button="Left" action="DoubleClick">
+        <action name="ToggleMaximizeFull"/>
+      </mousebind>
+      <mousebind button="Middle" action="Press">
+        <action name="Lower"/>
+        <action name="FocusToBottom"/>
+        <action name="Unfocus"/>
+      </mousebind>
+      <mousebind button="Right" action="Press">
+        <action name="Focus"/>
+        <action name="Raise"/>
+        <action name="ShowMenu">
+          <menu>client-menu</menu>
+        </action>
+      </mousebind>
+      <!-- Scroll on titlebar: shade/unshade -->
+      <mousebind button="Up" action="Click">
+        <action name="Shade"/>
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Down" action="Click">
+        <action name="Unshade"/>
+        <action name="Raise"/>
+      </mousebind>
+    </context>
+
+    <context name="Desktop">
+      <mousebind button="Right" action="Press">
+        <action name="ShowMenu">
+          <menu>root-menu</menu>
+        </action>
+      </mousebind>
+      <mousebind button="Middle" action="Press">
+        <action name="ShowMenu">
+          <menu>client-list-combined-menu</menu>
+        </action>
+      </mousebind>
+      <!-- Scroll on desktop: change workspace -->
+      <mousebind button="Up" action="Click">
+        <action name="GoToDesktop"><to>previous</to><wrap>yes</wrap></action>
+      </mousebind>
+      <mousebind button="Down" action="Click">
+        <action name="GoToDesktop"><to>next</to><wrap>yes</wrap></action>
+      </mousebind>
+    </context>
+
+    <context name="Close">
+      <mousebind button="Left" action="Click">
+        <action name="Close"/>
+      </mousebind>
+    </context>
+    <context name="Maximize">
+      <mousebind button="Left" action="Click">
+        <action name="ToggleMaximizeFull"/>
+      </mousebind>
+      <mousebind button="Middle" action="Click">
+        <action name="ToggleMaximizeVert"/>
+      </mousebind>
+      <mousebind button="Right" action="Click">
+        <action name="ToggleMaximizeHorz"/>
+      </mousebind>
+    </context>
+    <context name="Iconify">
+      <mousebind button="Left" action="Click">
+        <action name="Iconify"/>
+      </mousebind>
+    </context>
+    <context name="MoveResize">
+      <mousebind button="Up" action="Click">
+        <action name="GoToDesktop"><to>previous</to><wrap>yes</wrap></action>
+      </mousebind>
+      <mousebind button="Down" action="Click">
+        <action name="GoToDesktop"><to>next</to><wrap>yes</wrap></action>
+      </mousebind>
+      <mousebind button="A-Up" action="Click">
+        <action name="GoToDesktop"><to>previous</to><wrap>yes</wrap></action>
+      </mousebind>
+      <mousebind button="A-Down" action="Click">
+        <action name="GoToDesktop"><to>next</to><wrap>yes</wrap></action>
+      </mousebind>
+    </context>
+  </mouse>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       MENU CONFIGURATION
+       ════════════════════════════════════════════════════════════ -->
+  <menu>
+    <file>menu.xml</file>
+    <hideDelay>200</hideDelay>
+    <middle>no</middle>
+    <submenuShowDelay>100</submenuShowDelay>
+    <submenuHideDelay>400</submenuHideDelay>
+    <showIcons>yes</showIcons>
+    <manageDesktops>yes</manageDesktops>
+  </menu>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       APPLICATION RULES
+       Specific window behavior overrides (always floating, etc.)
+       ════════════════════════════════════════════════════════════ -->
+  <applications>
+    <!-- Apollo Shell panels — never decorated, always on top, skip taskbar -->
+    <application class="QuickShell" role="apollo-panel">
+      <layer>above</layer>
+      <decor>no</decor>
+      <focus>no</focus>
+      <skip_pager>yes</skip_pager>
+      <skip_taskbar>yes</skip_taskbar>
+    </application>
+
+    <!-- Floating dialogs, always on top -->
+    <application type="dialog">
+      <focus>yes</focus>
+    </application>
+    <application class="Ulauncher">
+      <decor>no</decor>
+      <layer>above</layer>
+      <focus>yes</focus>
+      <position force="yes">
+        <x>center</x>
+        <y>25%</y>
+      </position>
+    </application>
+
+    <!-- Media players — float and small by default -->
+    <application class="vlc">
+      <desktop>5</desktop>
+    </application>
+
+    <!-- Games — fullscreen by default -->
+    <application class="steam_app_*">
+      <fullscreen>yes</fullscreen>
+    </application>
+
+    <!-- Picom must not decorate its own window -->
+    <application name="picom">
+      <decor>no</decor>
+    </application>
+
+    <!-- Blueman: float -->
+    <application class="Blueman-manager">
+      <decor>yes</decor>
+      <position>
+        <x>center</x>
+        <y>center</y>
+      </position>
+    </application>
+
+    <!-- Pavucontrol: float, reasonable size -->
+    <application class="Pavucontrol">
+      <decor>yes</decor>
+      <size>
+        <width>640</width>
+        <height>400</height>
+      </size>
+      <position>
+        <x>center</x>
+        <y>center</y>
+      </position>
+    </application>
+  </applications>
+
+</openbox_config>

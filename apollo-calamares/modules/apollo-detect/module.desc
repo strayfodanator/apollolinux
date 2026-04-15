@@ -1,0 +1,19 @@
+---
+# Apollo Linux — Calamares module descriptor for apollo-detect
+# Place this file at: /usr/lib/calamares/modules/apollo-detect/module.desc
+
+type: "job"
+name: "apollo-detect"
+interface: "python"
+script: "main.py"
+timeout: 30
+
+# What this module does:
+# Detects GPU (PCI ID → driver tier), RAM, CPU score, Wayland compatibility.
+# Writes results to GlobalStorage for downstream modules.
+#
+# Sets:
+#   apollo_gpu_vendor, apollo_gpu_model, apollo_gpu_driver, apollo_gpu_pci_id
+#   apollo_gpu_wayland_ok, apollo_ram_mb, apollo_cpu_score
+#   apollo_kernel_pkg, apollo_desktop_default, apollo_desktop_locked
+#   apollo_recommend_reason

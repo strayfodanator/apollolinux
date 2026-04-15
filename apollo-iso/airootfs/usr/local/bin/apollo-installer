@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+#
+# Apollo Linux — apollo-installer (live environment launcher)
+# Installed to: /usr/local/bin/apollo-installer
+#
+# This script is called from the live desktop to launch Calamares
+# with the correct privilege escalation and logging.
+
+set -euo pipefail
+
+LOG_DIR="/var/log/Calamares"
+mkdir -p "$LOG_DIR"
+
+if [[ $EUID -ne 0 ]]; then
+    # Request root via polkit (GUI) or sudo (terminal)
+    if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+        exec pkexec --disable-internal-agent env \
+            DISPLAY="$DISPLAY" \
+            WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-}" \
+            XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-}" \
+            XAUTHORITY="${XAUTHORITY:-}" \
+            calamares -D6 2>&1 | tee "$LOG_DIR/calamares.log"
+    else
+        exec sudo calamares -D6 2>&1 | tee "$LOG_DIR/calamares.log"
+    fi
+else
+    exec calamares -D6 2>&1 | tee "$LOG_DIR/calamares.log"
+fi

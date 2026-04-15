@@ -1,0 +1,362 @@
+/*
+ * Apollo Dark — GTK3/GTK4 Theme
+ * Part of Apollo Linux Desktop
+ *
+ * Based on: adw-gtk3 (LGPL-2.1+)
+ * License: GPL-2.0
+ *
+ * Color palette:
+ *   Background:    #0f1117
+ *   Surface:       #1a1d27
+ *   Overlay:       #252836
+ *   Accent:        #6C8EFF  (Apollo Blue)
+ *   Accent Alt:    #A78BFA  (Apollo Purple)
+ *   Text:          #E8EAF0
+ *   Text Muted:    #8890A4
+ *   Success:       #4ADE80
+ *   Warning:       #FBBF24
+ *   Error:         #F87171
+ *   Border:        #2e3248
+ */
+
+@define-color accent_color          #6C8EFF;
+@define-color accent_bg_color       #6C8EFF;
+@define-color accent_fg_color       #ffffff;
+@define-color destructive_color     #F87171;
+@define-color destructive_bg_color  #b91c1c;
+@define-color destructive_fg_color  #ffffff;
+@define-color success_color         #4ADE80;
+@define-color warning_color         #FBBF24;
+@define-color error_color           #F87171;
+@define-color window_bg_color       #0f1117;
+@define-color window_fg_color       #E8EAF0;
+@define-color view_bg_color         #1a1d27;
+@define-color view_fg_color         #E8EAF0;
+@define-color headerbar_bg_color    #0f1117;
+@define-color headerbar_fg_color    #E8EAF0;
+@define-color headerbar_border_color #2e3248;
+@define-color headerbar_backdrop_color #0f1117;
+@define-color sidebar_bg_color      #0f1117;
+@define-color sidebar_fg_color      #E8EAF0;
+@define-color sidebar_backdrop_color #0f1117;
+@define-color card_bg_color         #1a1d27;
+@define-color card_fg_color         #E8EAF0;
+@define-color dialog_bg_color       #1a1d27;
+@define-color dialog_fg_color       #E8EAF0;
+@define-color popover_bg_color      #252836;
+@define-color popover_fg_color      #E8EAF0;
+@define-color shade_color           rgba(0, 0, 0, 0.4);
+@define-color scrollbar_outline_color rgba(0,0,0,0.5);
+
+/* ── Window / Root ──────────────────────────────────────────────── */
+window, .background {
+  background-color: @window_bg_color;
+  color: @window_fg_color;
+}
+
+/* ── Headerbar ──────────────────────────────────────────────────── */
+headerbar {
+  background-color: @headerbar_bg_color;
+  color: @headerbar_fg_color;
+  border-bottom: 1px solid @headerbar_border_color;
+  padding: 4px 8px;
+  min-height: 36px;
+}
+headerbar:backdrop {
+  background-color: @headerbar_backdrop_color;
+  filter: brightness(0.85);
+}
+headerbar .title {
+  font-weight: bold;
+  color: @headerbar_fg_color;
+}
+headerbar .subtitle {
+  color: @headerbar_fg_color;
+  opacity: 0.6;
+  font-size: 0.85em;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────── */
+button {
+  background-color: #252836;
+  color: @window_fg_color;
+  border: 1px solid @headerbar_border_color;
+  border-radius: 6px;
+  padding: 5px 12px;
+  transition: all 150ms ease;
+}
+button:hover {
+  background-color: #2e3248;
+  border-color: #3a3f5c;
+}
+button:active {
+  background-color: #1a1d27;
+}
+button:checked {
+  background-color: alpha(@accent_color, 0.2);
+  border-color: alpha(@accent_color, 0.5);
+  color: @accent_color;
+}
+button.suggested-action {
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+  border-color: transparent;
+}
+button.suggested-action:hover {
+  background-color: mix(@accent_bg_color, white, 0.1);
+}
+button.destructive-action {
+  background-color: @destructive_bg_color;
+  color: @destructive_fg_color;
+  border-color: transparent;
+}
+button.flat {
+  background-color: transparent;
+  border-color: transparent;
+}
+button.flat:hover {
+  background-color: rgba(255,255,255,0.06);
+}
+
+/* Window controls (headerbar buttons) */
+headerbar button.titlebutton {
+  padding: 3px;
+  border-radius: 50%;
+  min-width: 20px;
+  min-height: 20px;
+  border: none;
+}
+headerbar button.close { background-color: #F87171; }
+headerbar button.minimize { background-color: #FBBF24; }
+headerbar button.maximize { background-color: #4ADE80; }
+headerbar button.titlebutton:hover { filter: brightness(1.15); }
+
+/* ── Entries (text inputs) ──────────────────────────────────────── */
+entry {
+  background-color: @view_bg_color;
+  color: @view_fg_color;
+  border: 1px solid @headerbar_border_color;
+  border-radius: 6px;
+  padding: 6px 10px;
+  caret-color: @accent_color;
+}
+entry:focus {
+  border-color: @accent_color;
+  box-shadow: 0 0 0 2px alpha(@accent_color, 0.2);
+}
+
+/* ── Lists / Sidebars ───────────────────────────────────────────── */
+listview, treeview {
+  background-color: @view_bg_color;
+  color: @view_fg_color;
+}
+listview row, treeview row {
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin: 1px 4px;
+}
+listview row:selected, treeview row:selected {
+  background-color: alpha(@accent_color, 0.2);
+  color: @accent_color;
+}
+listview row:hover, treeview row:hover {
+  background-color: rgba(255,255,255,0.04);
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────── */
+.sidebar {
+  background-color: @sidebar_bg_color;
+  border-right: 1px solid @headerbar_border_color;
+}
+.sidebar row:selected {
+  background-color: alpha(@accent_color, 0.2);
+  color: @accent_color;
+  border-radius: 6px;
+}
+
+/* ── Scrollbars ─────────────────────────────────────────────────── */
+scrollbar {
+  background-color: transparent;
+  border: none;
+}
+scrollbar slider {
+  background-color: rgba(255,255,255,0.12);
+  border-radius: 8px;
+  min-width: 6px;
+  min-height: 6px;
+  margin: 2px;
+}
+scrollbar slider:hover {
+  background-color: rgba(255,255,255,0.22);
+}
+scrollbar slider:active {
+  background-color: @accent_color;
+}
+
+/* ── Switches ───────────────────────────────────────────────────── */
+switch {
+  background-color: #252836;
+  border-radius: 20px;
+  border: 1px solid @headerbar_border_color;
+}
+switch:checked {
+  background-color: @accent_color;
+  border-color: transparent;
+}
+switch slider {
+  background-color: white;
+  border-radius: 50%;
+  margin: 2px;
+}
+
+/* ── Progress / Scale ───────────────────────────────────────────── */
+progressbar trough {
+  background-color: #252836;
+  border-radius: 4px;
+  min-height: 6px;
+}
+progressbar progress {
+  background-color: @accent_color;
+  border-radius: 4px;
+}
+scale trough {
+  background-color: #252836;
+  border-radius: 4px;
+  min-height: 4px;
+}
+scale highlight {
+  background-color: @accent_color;
+  border-radius: 4px;
+}
+scale slider {
+  background-color: white;
+  border-radius: 50%;
+  min-width: 14px;
+  min-height: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+/* ── Menus ──────────────────────────────────────────────────────── */
+menu, .menu, .context-menu {
+  background-color: @popover_bg_color;
+  color: @popover_fg_color;
+  border: 1px solid @headerbar_border_color;
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+menuitem {
+  border-radius: 5px;
+  padding: 5px 10px;
+}
+menuitem:hover {
+  background-color: alpha(@accent_color, 0.15);
+  color: @window_fg_color;
+}
+menuitem:disabled {
+  color: @headerbar_border_color;
+}
+separator { 
+  background-color: @headerbar_border_color;
+  margin: 3px 8px;
+}
+
+/* ── Notebooks / Tabs ───────────────────────────────────────────── */
+notebook > header {
+  background-color: @headerbar_bg_color;
+  border-bottom: 1px solid @headerbar_border_color;
+}
+notebook > header tab {
+  padding: 6px 14px;
+  border-radius: 6px 6px 0 0;
+  color: #8890A4;
+}
+notebook > header tab:checked {
+  background-color: @view_bg_color;
+  color: @window_fg_color;
+  border-bottom: 2px solid @accent_color;
+}
+
+/* ── Tooltips ───────────────────────────────────────────────────── */
+tooltip {
+  background-color: #252836;
+  color: @window_fg_color;
+  border: 1px solid @headerbar_border_color;
+  border-radius: 6px;
+  padding: 4px 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* ── Status bars ────────────────────────────────────────────────── */
+statusbar {
+  background-color: @window_bg_color;
+  color: #8890A4;
+  border-top: 1px solid @headerbar_border_color;
+  font-size: 0.9em;
+  padding: 2px 8px;
+}
+
+/* ── Cards (libadwaita-style) ───────────────────────────────────── */
+.card {
+  background-color: @card_bg_color;
+  border: 1px solid @headerbar_border_color;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+/* ── Dialogs ────────────────────────────────────────────────────── */
+dialog > .dialog-vbox {
+  padding: 16px;
+}
+dialog .response-area {
+  padding: 8px;
+  border-top: 1px solid @headerbar_border_color;
+}
+
+/* ── Notifications (dunst renders via GTK in some paths) ───────── */
+.notification {
+  background-color: #1a1d27;
+  border: 1px solid #2e3248;
+  border-radius: 10px;
+}
+
+/* ── Check / Radio buttons ──────────────────────────────────────── */
+checkbutton check, radiobutton radio {
+  background-color: @view_bg_color;
+  border: 1px solid @headerbar_border_color;
+  border-radius: 4px;
+}
+checkbutton:checked check, radiobutton:checked radio {
+  background-color: @accent_color;
+  border-color: transparent;
+}
+radiobutton radio {
+  border-radius: 50%;
+}
+
+/* ── Spinbutton ─────────────────────────────────────────────────── */
+spinbutton {
+  background-color: @view_bg_color;
+  border: 1px solid @headerbar_border_color;
+  border-radius: 6px;
+}
+spinbutton button {
+  background-color: transparent;
+  border: none;
+  color: @accent_color;
+}
+
+/* ── File Chooser ───────────────────────────────────────────────── */
+.path-bar button {
+  background-color: rgba(255,255,255,0.04);
+  border: none;
+  border-radius: 4px;
+}
+.path-bar button:hover {
+  background-color: rgba(255,255,255,0.08);
+}
+
+/* ── Thunar-specific ────────────────────────────────────────────── */
+ThunarWindow .sidebar {
+  background-color: @sidebar_bg_color;
+}

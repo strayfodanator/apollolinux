@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#
+# Apollo Linux — apollo-shell-action
+# Sends IPC commands to the running Apollo Shell (QuickShell).
+#
+# Usage:
+#   apollo-shell-action toggle-sidebar
+#   apollo-shell-action toggle-app-menu
+#   apollo-shell-action toggle-dock
+#   apollo-shell-action reload
+#
+# QuickShell IPC uses a Unix socket at: /run/user/<UID>/apollo-shell.sock
+
+set -euo pipefail
+
+SOCK_PATH="/run/user/${UID}/apollo-shell.sock"
+ACTION="${1:-}"
+
+if [[ -z "$ACTION" ]]; then
+    echo "Usage: apollo-shell-action <action>"
+    echo "Actions: toggle-sidebar  toggle-app-menu  toggle-dock  reload"
+    exit 1
+fi
+
+if [[ ! -S "$SOCK_PATH" ]]; then
+    # Fallback: try quickshell IPC via qs-ipc tool if available
+    if command -v qs-ipc &>/dev/null; then
+        qs-ipc send "apollo-shell" "$ACTION"
+        exit $?
+    fi
+    echo "Apollo Shell IPC socket not found: $SOCK_PATH"
+    echo "Is Apollo Shell running?"
+    exit 1
+fi
+
+# Send action via socket
+echo "$ACTION" | socat - UNIX-CONNECT:"$SOCK_PATH" 2>/dev/null || \
+    printf '%s' "$ACTION" > "$SOCK_PATH" 2>/dev/null || \
+    true

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Apollo Desktop — Right-click Desktop Menu
+  Integrates with Apollo Shell for clean, modern look
+  Edit this file to customize your desktop menu
+-->
+<openbox_menu xmlns="http://openbox.org/3.4/menu">
+
+  <menu id="root-menu" label="Apollo Desktop">
+
+    <!-- App launcher -->
+    <item label="󰍉  Apps..." icon="/usr/share/icons/Papirus-Dark/48x48/apps/system-search.svg">
+      <action name="Execute"><command>ulauncher-toggle</command></action>
+    </item>
+
+    <separator/>
+
+    <!-- Common apps -->
+    <menu id="apps-menu" label="󰀻  Applications" icon="/usr/share/icons/Papirus-Dark/48x48/apps/applications-all.svg">
+      <item label="  File Manager" icon="/usr/share/icons/Papirus-Dark/48x48/apps/system-file-manager.svg">
+        <action name="Execute"><command>thunar</command></action>
+      </item>
+      <item label="  Terminal" icon="/usr/share/icons/Papirus-Dark/48x48/apps/terminal.svg">
+        <action name="Execute"><command>alacritty</command></action>
+      </item>
+      <item label="  Text Editor" icon="/usr/share/icons/Papirus-Dark/48x48/apps/kate.svg">
+        <action name="Execute"><command>kate</command></action>
+      </item>
+      <item label="  Browser" icon="/usr/share/icons/Papirus-Dark/48x48/apps/firefox.svg">
+        <action name="Execute"><command>xdg-open https://</command></action>
+      </item>
+      <separator/>
+      <item label="  Screenshot" icon="/usr/share/icons/Papirus-Dark/48x48/apps/flameshot.svg">
+        <action name="Execute"><command>flameshot gui</command></action>
+      </item>
+    </menu>
+
+    <separator/>
+
+    <!-- Workspace submenu -->
+    <menu id="workspaces-menu" label="󰕰  Workspaces">
+      <item label="Home (1)">
+        <action name="GoToDesktop"><to>1</to></action>
+      </item>
+      <item label="Browser (2)">
+        <action name="GoToDesktop"><to>2</to></action>
+      </item>
+      <item label="Code (3)">
+        <action name="GoToDesktop"><to>3</to></action>
+      </item>
+      <item label="Files (4)">
+        <action name="GoToDesktop"><to>4</to></action>
+      </item>
+      <item label="Media (5)">
+        <action name="GoToDesktop"><to>5</to></action>
+      </item>
+    </menu>
+
+    <separator/>
+
+    <!-- System -->
+    <item label="⚙  Settings" icon="/usr/share/icons/Papirus-Dark/48x48/apps/preferences-system.svg">
+      <action name="Execute"><command>apollo-control</command></action>
+    </item>
+    <item label="󰍉  System Monitor" icon="/usr/share/icons/Papirus-Dark/48x48/apps/utilities-system-monitor.svg">
+      <action name="Execute"><command>alacritty -e htop</command></action>
+    </item>
+
+    <separator/>
+
+    <!-- Panel management -->
+    <item label="  Panel Manager" icon="/usr/share/icons/Papirus-Dark/48x48/apps/xfce4-panel.svg">
+      <action name="Execute"><command>apollo-panel-manager</command></action>
+    </item>
+    <item label="  Reload Desktop">
+      <action name="Reconfigure"/>
+    </item>
+
+    <separator/>
+
+    <!-- Session -->
+    <menu id="session-menu" label="󰐥  Session">
+      <item label="  Lock Screen">
+        <action name="Execute"><command>xscreensaver-command -lock</command></action>
+      </item>
+      <item label="󰒲  Suspend">
+        <action name="Execute"><command>systemctl suspend</command></action>
+      </item>
+      <separator/>
+      <item label="  Log Out">
+        <action name="Exit"><prompt>yes</prompt></action>
+      </item>
+      <item label="󰜉  Restart">
+        <action name="Execute"><command>reboot</command></action>
+      </item>
+      <item label="  Shut Down">
+        <action name="Execute"><command>poweroff</command></action>
+      </item>
+    </menu>
+
+  </menu>
+
+  <!-- Client menu (right-click on titlebar) -->
+  <menu id="client-menu">
+    <item label="Minimize"><action name="Iconify"/></item>
+    <item label="Maximize"><action name="ToggleMaximizeFull"/></item>
+    <item label="Fullscreen"><action name="ToggleFullscreen"/></item>
+    <separator/>
+    <menu id="send-to-menu" label="Send to Desktop">
+      <item label="Home"><action name="SendToDesktop"><to>1</to></action></item>
+      <item label="Browser"><action name="SendToDesktop"><to>2</to></action></item>
+      <item label="Code"><action name="SendToDesktop"><to>3</to></action></item>
+    </menu>
+    <separator/>
+    <item label="Decorate"><action name="ToggleDecorations"/></item>
+    <item label="Always on Top"><action name="ToggleAlwaysOnTop"/></item>
+    <separator/>
+    <item label="Close"><action name="Close"/></item>
+  </menu>
+
+  <menu id="client-list-combined-menu" label="Windows">
+    <separator label="--- Open Windows ---"/>
+  </menu>
+
+</openbox_menu>

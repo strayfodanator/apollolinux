@@ -1,0 +1,129 @@
+# Apollo Desktop — Alacritty Terminal Configuration
+# ~/.config/alacritty/alacritty.toml
+# Uses Apollo Dark color scheme + FiraCode Nerd Font
+
+[general]
+import = []
+live_config_reload = true
+
+[env]
+TERM = "xterm-256color"
+
+[window]
+padding.x = 12
+padding.y = 10
+decorations = "None"      # Openbox handles decorations
+opacity = 0.96
+startup_mode = "Windowed"
+title = "Terminal"
+dynamic_title = true
+
+[scrolling]
+history = 10000
+multiplier = 3
+
+[font]
+normal.family    = "FiraCode Nerd Font"
+normal.style     = "Regular"
+bold.family      = "FiraCode Nerd Font"
+bold.style       = "Bold"
+italic.family    = "FiraCode Nerd Font"
+italic.style     = "Light Italic"
+bold_italic.family = "FiraCode Nerd Font"
+bold_italic.style  = "Bold Italic"
+size = 11.0
+offset.x = 0
+offset.y = 2
+
+[cursor]
+style.shape    = "Block"
+style.blinking = "On"
+blink_timeout  = 5
+vi_mode_style.shape = "Underline"
+
+# ── Apollo Dark Color Scheme ──────────────────────────────────────────────────
+[colors]
+draw_bold_text_with_bright_colors = true
+
+[colors.primary]
+background = "#0f1117"
+foreground = "#E8EAF0"
+dim_foreground  = "#8890A4"
+bright_foreground = "#ffffff"
+
+[colors.cursor]
+text   = "#0f1117"
+cursor = "#6C8EFF"
+
+[colors.vi_mode_cursor]
+text   = "#0f1117"
+cursor = "#A78BFA"
+
+[colors.search]
+matches.foreground       = "#0f1117"
+matches.background       = "#6C8EFF"
+focused_match.foreground = "#0f1117"
+focused_match.background = "#A78BFA"
+
+[colors.hints]
+start.foreground = "#0f1117"
+start.background = "#FBBF24"
+end.foreground   = "#0f1117"
+end.background   = "#8890A4"
+
+[colors.selection]
+text       = "CellForeground"
+background = "#252836"
+
+[colors.normal]
+black   = "#1a1d27"
+red     = "#F87171"
+green   = "#4ADE80"
+yellow  = "#FBBF24"
+blue    = "#6C8EFF"
+magenta = "#A78BFA"
+cyan    = "#22D3EE"
+white   = "#E8EAF0"
+
+[colors.bright]
+black   = "#252836"
+red     = "#FCA5A5"
+green   = "#86EFAC"
+yellow  = "#FDE68A"
+blue    = "#93ABFF"
+magenta = "#C4B5FD"
+cyan    = "#67E8F9"
+white   = "#ffffff"
+
+[colors.dim]
+black   = "#0f1117"
+red     = "#B45454"
+green   = "#36A35A"
+yellow  = "#B5890F"
+blue    = "#4A67CC"
+magenta = "#7A60C4"
+cyan    = "#1899B0"
+white   = "#8890A4"
+
+# ── Keyboard ─────────────────────────────────────────────────────────────────
+[keyboard]
+bindings = [
+    { key = "V",      mods = "Control|Shift", action = "Paste" },
+    { key = "C",      mods = "Control|Shift", action = "Copy"  },
+    { key = "Plus",   mods = "Control",       action = "IncreaseFontSize" },
+    { key = "Minus",  mods = "Control",       action = "DecreaseFontSize" },
+    { key = "Key0",   mods = "Control",       action = "ResetFontSize" },
+    { key = "F",      mods = "Control|Shift", action = "SearchForward" },
+    { key = "N",      mods = "Control|Shift", action = "ScrollToBottom" },
+]
+
+# ── Mouse ─────────────────────────────────────────────────────────────────────
+[mouse]
+hide_when_typing = true
+bindings = [
+    { mouse = "Middle", action = "PasteSelection" },
+]
+
+[selection]
+semantic_escape_chars = ",│`|:\"' ()[]{}<>\t"
+save_to_clipboard = false

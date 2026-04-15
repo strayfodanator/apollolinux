@@ -1,0 +1,11 @@
+---
+# Apollo Linux — Calamares module descriptor for apollo-drivers
+type: "job"
+name: "apollo-drivers"
+interface: "python"
+script: "main.py"
+timeout: 180
+
+# Reads apollo_gpu_driver, apollo_kernel_pkg from GlobalStorage.
+# Installs the correct driver package(s) into the target system
+# using the local ISO driver cache.

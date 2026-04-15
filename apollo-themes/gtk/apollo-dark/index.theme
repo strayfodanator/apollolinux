@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Apollo-Dark
+Comment=Apollo Linux dark theme. Clean, dynamic, lightweight.
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=Apollo-Dark
+MetacityTheme=Apollo-Dark
+IconTheme=Papirus-Dark
+CursorTheme=Bibata-Modern-Classic
+ButtonLayout=close,minimize,maximize:
