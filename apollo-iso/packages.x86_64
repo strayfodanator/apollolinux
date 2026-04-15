@@ -46,8 +46,8 @@ lvm2
 cryptsetup
 
 # ── Calamares Installer ───────────────────────────────────────────────────────
-calamares
-calamares-extensions
+# calamares
+# calamares-extensions
 python
 python-pyqt5
 python-yaml
@@ -98,11 +98,11 @@ dunst
 libnotify
 
 # App Launcher
-ulauncher
+# ulauncher
 
 # Wallpaper
 feh
-nitrogen
+# nitrogen
 
 # ── Apollo Desktop Applications ───────────────────────────────────────────────
 # File manager
@@ -174,13 +174,13 @@ qt5-wayland
 qt6-wayland
 wayland
 wayland-utils
-wlroots
+# wlroots
 swaync
 
 # ── Input & Locale ────────────────────────────────────────────────────────────
 ibus
-ibus-gtk3
-ibus-gtk4
+# ibus-gtk3
+# ibus-gtk4
 libinput
 xf86-input-libinput
 
