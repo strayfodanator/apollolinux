@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+#
+# Apollo Linux — apollo-setup-user
+# Installed to: /usr/local/bin/apollo-setup-user
+#
+# Called by Calamares post-install OR by apollo-welcome on first login.
+# Sets up the user's home directory with Apollo defaults:
+#   - openbox config
+#   - picom config
+#   - dunst config
+#   - alacritty config
+#   - apollo-shell config
+#   - GTK2/3 settings
+#   - XDG user dirs
+
+set -euo pipefail
+
+USER_HOME="${1:-$HOME}"
+SYSTEM_DEFAULTS="/usr/share/apollo"
+
+echo "→ Apollo: setting up user environment in $USER_HOME"
+
+# ── XDG user dirs ────────────────────────────────────────────────────────────
+xdg-user-dirs-update --force 2>/dev/null || true
+
+# ── Config directories ────────────────────────────────────────────────────────
+mkdir -p \
+    "$USER_HOME/.config/openbox" \
+    "$USER_HOME/.config/picom" \
+    "$USER_HOME/.config/dunst" \
+    "$USER_HOME/.config/alacritty" \
+    "$USER_HOME/.config/apollo-shell" \
+    "$USER_HOME/.config/apollo" \
+    "$USER_HOME/.config/gtk-3.0" \
+    "$USER_HOME/.local/share/apollo-shell/plugins" \
+    "$USER_HOME/.local/share/apollo-notes"
+
+# ── Openbox config ────────────────────────────────────────────────────────────
+OPENBOX_SRC="/etc/xdg/openbox"
+for cfg in rc.xml menu.xml autostart; do
+    [[ ! -f "$USER_HOME/.config/openbox/$cfg" ]] && \
+    [[ -f "$OPENBOX_SRC/$cfg" ]] && \
+    cp "$OPENBOX_SRC/$cfg" "$USER_HOME/.config/openbox/$cfg"
+done
+
+# ── picom ────────────────────────────────────────────────────────────────────
+[[ ! -f "$USER_HOME/.config/picom/picom.conf" ]] && \
+[[ -f "$SYSTEM_DEFAULTS/config/picom.conf" ]] && \
+cp "$SYSTEM_DEFAULTS/config/picom.conf" "$USER_HOME/.config/picom/picom.conf"
+
+# ── dunst ─────────────────────────────────────────────────────────────────────
+[[ ! -f "$USER_HOME/.config/dunst/dunstrc" ]] && \
+[[ -f "$SYSTEM_DEFAULTS/config/dunstrc" ]] && \
+cp "$SYSTEM_DEFAULTS/config/dunstrc" "$USER_HOME/.config/dunst/dunstrc"
+
+# ── alacritty ─────────────────────────────────────────────────────────────────
+[[ ! -f "$USER_HOME/.config/alacritty/alacritty.toml" ]] && \
+[[ -f "$SYSTEM_DEFAULTS/config/alacritty.toml" ]] && \
+cp "$SYSTEM_DEFAULTS/config/alacritty.toml" "$USER_HOME/.config/alacritty/alacritty.toml"
+
+# ── Apollo Shell ──────────────────────────────────────────────────────────────
+[[ ! -f "$USER_HOME/.config/apollo-shell/apollo-shell.json" ]] && \
+[[ -f "$SYSTEM_DEFAULTS/shell/apollo-shell.json" ]] && \
+cp "$SYSTEM_DEFAULTS/shell/apollo-shell.json" "$USER_HOME/.config/apollo-shell/apollo-shell.json"
+
+# ── GTK3 settings ─────────────────────────────────────────────────────────────
+cat > "$USER_HOME/.config/gtk-3.0/settings.ini" <<EOF
+[Settings]
+gtk-theme-name=Apollo-Dark
+gtk-icon-theme-name=Papirus-Dark
+gtk-cursor-theme-name=Bibata-Modern-Classic
+gtk-cursor-theme-size=24
+gtk-font-name=FiraCode Nerd Font 11
+gtk-application-prefer-dark-theme=1
+gtk-toolbar-style=GTK_TOOLBAR_BOTH_HORIZ
+gtk-button-images=1
+gtk-menu-images=1
+EOF
+
+# ── GTK2 (legacy) ─────────────────────────────────────────────────────────────
+cat > "$USER_HOME/.gtkrc-2.0" <<EOF
+gtk-theme-name="Apollo-Dark"
+gtk-icon-theme-name="Papirus-Dark"
+gtk-cursor-theme-name="Bibata-Modern-Classic"
+gtk-cursor-theme-size=24
+gtk-font-name="FiraCode Nerd Font 11"
+EOF
+
+# ── Wallpaper config ──────────────────────────────────────────────────────────
+mkdir -p "$USER_HOME/.config/apollo"
+echo "/usr/share/apollo/wallpapers/apollo-default.png" > "$USER_HOME/.config/apollo/wallpaper"
+
+# ── Enable Apollo Shell systemd user service ──────────────────────────────────
+if command -v systemctl &>/dev/null; then
+    systemctl --user enable apollo-shell.service 2>/dev/null || true
+fi
+
+# ── Set wallpaper for X11 (via feh) ──────────────────────────────────────────
+if [ -n "${DISPLAY:-}" ] && command -v feh &>/dev/null; then
+    feh --no-fehbg --bg-fill "/usr/share/apollo/wallpapers/apollo-default.png" 2>/dev/null || true
+fi
+
+echo "✓ Apollo user environment configured."

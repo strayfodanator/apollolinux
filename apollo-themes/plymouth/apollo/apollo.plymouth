@@ -1,0 +1,16 @@
+# Apollo Linux Plymouth Boot Splash Theme
+# apollo-themes/plymouth/apollo/apollo.plymouth
+#
+# Two-step animation:
+#   1. Background fades in (dark #0f1117)
+#   2. Geometric rocket appears at center with blue glow pulsing
+#   3. Loading bar fills in blue accent color
+
+[Plymouth Theme]
+Name=Apollo
+Description=Apollo Linux boot splash
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/apollo
+ScriptFile=/usr/share/plymouth/themes/apollo/apollo.script
