@@ -1,0 +1,26 @@
+# Apollo Linux — systemd units to enable in installed system
+# apollo-iso/airootfs/etc/systemd/system-enabled.txt
+#
+# This file is READ by the Calamares apollo-desktop-select module
+# to enable the correct services in the installed system.
+#
+# Format: one unit per line
+# apollo-desktop-select.py calls:
+#   systemctl enable <unit> --root /target
+
+# ── Core system ────────────────────────────────────────────────────────────────
+NetworkManager.service
+systemd-timesyncd.service
+avahi-daemon.service
+bluetooth.service
+acpid.service
+fstrim.timer
+
+# ── Display ────────────────────────────────────────────────────────────────────
+lightdm.service
+
+# ── Audio ──────────────────────────────────────────────────────────────────────
+# (PipeWire is managed as a user service — enabled per-user by apollo-setup-user)
+
+# ── Apollo Shell (user service — enabled by apollo-setup-user) ─────────────────
+# apollo-shell.service  ← enabled per-user, not system-wide
