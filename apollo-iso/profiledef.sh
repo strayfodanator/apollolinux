@@ -33,14 +33,7 @@ airootfs_image_tool_options=(
 bootstrap_tarball_compression=('zstd' '-c' '-T0' '--auto-threads=logical' '--long' '-19')
 
 file_permissions=(
-    ["/etc/shadow"]="0:0:400"
-    ["/etc/gshadow"]="0:0:400"
-    ["/root"]="0:0:750"
-    ["/root/.automated_script.sh"]="0:0:755"
-    ["/root/.gnupg"]="0:0:700"
     ["/etc/apollo/detect-hardware.sh"]="0:0:755"
     ["/usr/local/bin/apollo-installer"]="0:0:755"
-    ["/usr/local/bin/apollo-driver-detect"]="0:0:755"
-    ["/etc/calamares/scripts/apollo-detect.py"]="0:0:755"
-    ["/etc/calamares/scripts/apollo-drivers.py"]="0:0:755"
+    ["/usr/local/bin/apollo-setup-user"]="0:0:755"
 )
