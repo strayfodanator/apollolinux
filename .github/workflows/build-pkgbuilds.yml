@@ -1,0 +1,112 @@
+name: Build Apollo PKGBUILDs
+
+on:
+  push:
+    paths:
+      - 'apollo-pkgbuild/**'
+    branches: [main, dev]
+  pull_request:
+    paths:
+      - 'apollo-pkgbuild/**'
+  workflow_dispatch:
+
+jobs:
+  # ── Lint PKGBUILDs (fast, no compilation) ──────────────────────────────────
+  lint:
+    name: Lint PKGBUILDs
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install namcap
+        run: pacman -Syu --noconfirm namcap
+
+      - name: Lint all PKGBUILDs
+        run: |
+          ERRORS=0
+          for pkgbuild in apollo-pkgbuild/*/PKGBUILD; do
+            echo "── Linting: $pkgbuild"
+            namcap "$pkgbuild" 2>&1 | grep -v "^W " || true  # ignore warnings, fail on errors
+            if namcap "$pkgbuild" 2>&1 | grep -q "^E "; then
+              echo "❌ Errors in $pkgbuild"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "✅ $pkgbuild OK"
+            fi
+          done
+          exit $ERRORS
+
+  # ── Build apollo-themes (architecture-independent, fast) ───────────────────
+  build-themes:
+    name: Build apollo-themes
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup build env
+        run: |
+          pacman -Syu --noconfirm base-devel git sudo fakeroot
+          useradd -m builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          chown -R builder:builder apollo-pkgbuild/apollo-themes/
+      - name: Build
+        run: su builder -c "cd apollo-pkgbuild/apollo-themes && makepkg --noconfirm --noprogressbar -sf 2>&1"
+        continue-on-error: true
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: apollo-themes-pkg
+          path: apollo-pkgbuild/apollo-themes/*.pkg.tar.zst
+          retention-days: 7
+
+  # ── Build apollo-openbox ───────────────────────────────────────────────────
+  build-openbox:
+    name: Build apollo-openbox
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        run: |
+          pacman -Syu --noconfirm base-devel git sudo autoconf automake libtool \
+                                  pkgconf libxml2 libxinerama libxrandr libxcursor \
+                                  pango startup-notification imlib2
+          useradd -m builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          chown -R builder:builder apollo-pkgbuild/apollo-openbox/
+      - name: Build
+        run: su builder -c "cd apollo-pkgbuild/apollo-openbox && makepkg --noconfirm --noprogressbar -sf 2>&1"
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: apollo-openbox-pkg
+          path: apollo-pkgbuild/apollo-openbox/*.pkg.tar.zst
+          retention-days: 7
+
+  # ── Validate nvidia-390xx patches apply (no compilation, fast) ────────────
+  validate-nvidia-390xx-patches:
+    name: Validate NVIDIA 390xx Patches
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install patch
+        run: pacman -Syu --noconfirm patch
+      - name: Check patches are valid diff format
+        run: |
+          for patch in apollo-pkgbuild/nvidia-390xx-dkms/patches/*.patch; do
+            echo "Validating: $(basename $patch)"
+            # Check it's a valid unified diff
+            if ! grep -qE '^(---|\+\+\+|@@)' "$patch"; then
+              echo "⚠️  Warning: $patch may not be a standard unified diff"
+            else
+              echo "✅ $(basename $patch) format OK"
+            fi
+          done

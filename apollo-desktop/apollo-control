@@ -1,0 +1,610 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Apollo Linux — Apollo Control Center
+Settings hub for Apollo Desktop: appearance, display, effects, drivers.
+
+Sections:
+  - Appearance  (theme, icons, fonts, cursors)
+  - Display     (resolution, DPI, monitors)
+  - Effects     (blur, shadows, animations, transparency)
+  - Desktop     (wallpaper, panel layout)
+  - Drivers     (GPU driver info, DKMS status)
+  - About       (Apollo Linux version, hardware)
+"""
+
+import os
+import subprocess
+import json
+import sys
+
+try:
+    import gi
+    gi.require_version("Gtk", "4.0")
+    gi.require_version("Adw", "1")
+    from gi.repository import Gtk, Adw, GLib, Gdk, GdkPixbuf, Pango
+except ImportError:
+    print("ERROR: GTK4 / libadwaita required.", file=sys.stderr)
+    sys.exit(1)
+
+CONFIG_DIR  = os.path.expanduser("~/.config/apollo")
+SHELL_CFG   = os.path.expanduser("~/.config/apollo-shell/apollo-shell.json")
+PICOM_CFG   = os.path.expanduser("~/.config/picom/picom.conf")
+GTK3_CFG    = os.path.expanduser("~/.config/gtk-3.0/settings.ini")
+DPI_FILE    = os.path.join(CONFIG_DIR, "dpi")
+WALLPAPER_FILE = os.path.join(CONFIG_DIR, "wallpaper")
+WALLPAPER_DIR  = "/usr/share/apollo/wallpapers"
+
+CSS = b"""
+window, .background { background-color: #0f1117; color: #E8EAF0; }
+headerbar { background-color: #0f1117; border-bottom: 1px solid #2e3248; }
+.nav-sidebar { background-color: #0f1117; border-right: 1px solid #2e3248; }
+.section-title {
+    font-size: 13px; font-weight: bold;
+    color: #6C8EFF; margin-bottom: 8px; margin-top: 16px;
+}
+.pref-group {
+    background-color: #1a1d27;
+    border: 1px solid #2e3248;
+    border-radius: 10px;
+    padding: 4px 0;
+    margin-bottom: 12px;
+}
+.pref-row {
+    background-color: transparent;
+    padding: 10px 14px;
+    border-bottom: 1px solid #252836;
+}
+.pref-row:last-child { border-bottom: none; }
+.pref-label { color: #E8EAF0; font-size: 12px; }
+.pref-sublabel { color: #8890A4; font-size: 10px; }
+.driver-chip {
+    background-color: #252836;
+    border: 1px solid #2e3248;
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 11px;
+    color: #6C8EFF;
+}
+.status-ok   { color: #4ADE80; }
+.status-warn { color: #FBBF24; }
+.status-err  { color: #F87171; }
+.about-header { font-size: 24px; font-weight: bold; color: #6C8EFF; }
+.about-ver    { font-size: 12px; color: #8890A4; }
+"""
+
+
+def run(cmd: list[str], **kwargs) -> str:
+    try:
+        return subprocess.check_output(cmd, text=True, **kwargs).strip()
+    except Exception:
+        return ""
+
+
+def get_hw():
+    script = "/etc/apollo/detect-hardware.sh"
+    result = {}
+    output = run(["bash", script])
+    for line in output.splitlines():
+        if "=" in line:
+            k, _, v = line.partition("=")
+            result[k.strip()] = v.strip()
+    return result
+
+
+def read_cfg(path: str, default=None):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except Exception:
+        return default or {}
+
+
+def write_cfg(path: str, data: dict):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def set_gtk_theme(theme: str, icons: str, cursor: str, font: str):
+    ini = f"[Settings]\ngtk-theme-name={theme}\ngtk-icon-theme-name={icons}\n"
+    ini += f"gtk-cursor-theme-name={cursor}\ngtk-font-name={font}\n"
+    ini += "gtk-application-prefer-dark-theme=1\n"
+    os.makedirs(os.path.expanduser("~/.config/gtk-3.0"), exist_ok=True)
+    with open(GTK3_CFG, "w") as f:
+        f.write(ini)
+    run(["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", theme])
+    run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", icons])
+    run(["gsettings", "set", "org.gnome.desktop.interface", "cursor-theme", cursor])
+
+
+def reload_picom():
+    run(["pkill", "-SIGUSR1", "picom"])
+
+
+def reload_shell():
+    run(["apollo-shell-action", "reload"])
+
+
+class ApolloControlCenter(Adw.Application):
+
+    def __init__(self):
+        super().__init__(application_id="org.apollolinux.Control")
+        self.connect("activate", self.build_ui)
+        self.hw = get_hw()
+        self.shell_cfg = read_cfg(SHELL_CFG, {})
+
+    def build_ui(self, app):
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS)
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(), provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        win = Adw.ApplicationWindow(application=app)
+        win.set_title("Apollo Control Center")
+        win.set_default_size(840, 560)
+
+        # ── Navigation split layout ──────────────────────────────
+        split = Adw.NavigationSplitView()
+        split.set_min_sidebar_width(200)
+        split.set_max_sidebar_width(220)
+
+        # Sidebar navigation list
+        sidebar_page = Adw.NavigationPage(title="Settings")
+        sidebar_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        list_box = Gtk.ListBox()
+        list_box.add_css_class("nav-sidebar")
+        list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
+
+        self.content_stack = Gtk.Stack()
+        self.content_stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
+
+        nav_items = [
+            ("󰔎",  "Appearance", self.page_appearance),
+            ("󰍹",  "Display",    self.page_display),
+            ("󰟷",  "Effects",    self.page_effects),
+            ("󰣚",  "Desktop",    self.page_desktop),
+            ("󰻠",  "Drivers",    self.page_drivers),
+            ("󰋙",  "About",      self.page_about),
+        ]
+
+        for icon, label, builder in nav_items:
+            row = Gtk.ListBoxRow()
+            row.set_margin_start(4)
+            row.set_margin_end(4)
+            row.set_margin_top(2)
+            row.set_margin_bottom(2)
+
+            r_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            r_box.set_margin_start(12)
+            r_box.set_margin_top(8)
+            r_box.set_margin_bottom(8)
+
+            icon_l = Gtk.Label(label=icon)
+            icon_l.set_markup(f"<span foreground='#6C8EFF' size='large'>{icon}</span>")
+            icon_l.set_width_chars(2)
+
+            lbl = Gtk.Label(label=label)
+            lbl.set_xalign(0)
+            lbl.set_hexpand(True)
+
+            r_box.append(icon_l)
+            r_box.append(lbl)
+            row.set_child(r_box)
+            row.section_name = label.lower()
+            list_box.append(row)
+
+            # Build page
+            page_widget = builder()
+            self.content_stack.add_named(page_widget, label.lower())
+
+        list_box.connect("row-selected", self.on_nav_select)
+        list_box.select_row(list_box.get_row_at_index(0))
+
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_child(list_box)
+        scrolled.set_vexpand(True)
+
+        sidebar_box.append(scrolled)
+        sidebar_page.set_child(sidebar_box)
+
+        content_page = Adw.NavigationPage(title="Apollo Control Center")
+        content_scroll = Gtk.ScrolledWindow()
+        content_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        content_scroll.set_child(self.content_stack)
+        content_page.set_child(content_scroll)
+
+        split.set_sidebar(sidebar_page)
+        split.set_content(content_page)
+
+        win.set_content(split)
+        win.present()
+
+    def on_nav_select(self, listbox, row):
+        if row:
+            self.content_stack.set_visible_child_name(row.section_name)
+
+    # ── Pages ────────────────────────────────────────────────────
+
+    def page_appearance(self):
+        box = self._page_box("Appearance", "Colors, icons, fonts and cursors")
+
+        # GTK Theme
+        self._add_section(box, "GTK Theme")
+        theme_row = self._combo_row(
+            "Color Theme", "Choose the application color scheme",
+            ["Apollo-Dark", "Apollo-Light", "adw-gtk3-dark", "adw-gtk3"],
+            "Apollo-Dark"
+        )
+        self._add_pref_row(box, theme_row)
+
+        # Icon Theme
+        self._add_section(box, "Icons")
+        icon_row = self._combo_row(
+            "Icon Theme", "Icons shown in apps and file manager",
+            ["Papirus-Dark", "Papirus", "Papirus-Light", "Adwaita"],
+            "Papirus-Dark"
+        )
+        self._add_pref_row(box, icon_row)
+
+        # Cursor
+        self._add_section(box, "Cursor")
+        cursor_row = self._combo_row(
+            "Cursor Theme", "Mouse cursor appearance",
+            ["Bibata-Modern-Classic", "Bibata-Modern-Ice", "Adwaita", "xcursor-breeze"],
+            "Bibata-Modern-Classic"
+        )
+        cursor_size = self._spin_row("Cursor Size", "Cursor size in pixels", 16, 64, 24, 4)
+        self._add_pref_row(box, cursor_row)
+        self._add_pref_row(box, cursor_size)
+
+        # Fonts
+        self._add_section(box, "Fonts")
+        font_row = self._combo_row(
+            "Interface Font", "Font used across applications",
+            ["FiraCode Nerd Font", "Inter", "Noto Sans", "Roboto"],
+            "FiraCode Nerd Font"
+        )
+        font_size = self._spin_row("Font Size", "Font size in points", 8, 18, 11, 1)
+        self._add_pref_row(box, font_row)
+        self._add_pref_row(box, font_size)
+
+        return box
+
+    def page_display(self):
+        box = self._page_box("Display", "Resolution, DPI and multi-monitor settings")
+
+        # Get current resolution
+        resolution = run(["xrandr", "--current"]) or "Not available"
+        primary_line = next((l for l in resolution.splitlines() if "*" in l), "")
+        current_res = primary_line.strip().split()[0] if primary_line else "Unknown"
+
+        self._add_section(box, "Primary Monitor")
+
+        # DPI
+        dpi_val = 96
+        try:
+            dpi_val = int(open(DPI_FILE).read().strip())
+        except Exception:
+            pass
+        dpi_row = self._spin_row("DPI / Scale", "Display dots per inch (96 = 1x, 192 = 2x)", 72, 240, dpi_val, 12)
+        def on_dpi_changed(spin):
+            val = int(spin.get_value())
+            os.makedirs(CONFIG_DIR, exist_ok=True)
+            open(DPI_FILE, "w").write(str(val))
+            run(["xrandr", "--dpi", str(val)])
+        dpi_row[1].connect("value-changed", on_dpi_changed)
+        self._add_pref_row(box, dpi_row[0])
+
+        res_info = self._info_row("Current Resolution", current_res)
+        self._add_pref_row(box, res_info)
+
+        self._add_section(box, "Night Light")
+        nightlight_row = self._switch_row(
+            "Night Light", "Reduces blue light in the evening",
+            False
+        )
+        self._add_pref_row(box, nightlight_row)
+
+        return box
+
+    def page_effects(self):
+        box = self._page_box("Effects", "Visual effects: blur, shadows, animations")
+
+        self._add_section(box, "Compositor (picom)")
+
+        shadows_row = self._switch_row("Window Shadows", "Drop shadow behind windows", True)
+        fading_row  = self._switch_row("Fading Animations", "Windows fade in and out", True)
+        blur_row    = self._switch_row("Background Blur",
+            "Blur content behind transparent windows (requires modern GPU)", False)
+        rounded_row = self._switch_row("Rounded Corners", "Round window corners (via picom)", True)
+        corner_size = self._spin_row("Corner Radius", "Pixel radius for rounded corners", 0, 20, 10, 2)
+
+        for row in [shadows_row, fading_row, blur_row, rounded_row, corner_size[0]]:
+            self._add_pref_row(box, row)
+
+        apply_btn = Gtk.Button(label="Apply Effects")
+        apply_btn.add_css_class("suggested-action")
+        apply_btn.set_margin_top(12)
+        apply_btn.set_margin_start(16)
+        apply_btn.set_margin_end(16)
+        apply_btn.connect("clicked", lambda _: reload_picom())
+        box.append(apply_btn)
+
+        self._add_section(box, "Transparency")
+        opacity_row = self._spin_row("Inactive Window Opacity", "Opacity of windows not in focus (90-100%)", 80, 100, 96, 2)
+        self._add_pref_row(box, opacity_row[0])
+
+        return box
+
+    def page_desktop(self):
+        box = self._page_box("Desktop", "Wallpaper and panel configuration")
+
+        self._add_section(box, "Wallpaper")
+
+        current_wp = ""
+        try:
+            current_wp = open(WALLPAPER_FILE).read().strip()
+        except Exception:
+            pass
+
+        wp_label = self._info_row("Current Wallpaper",
+            os.path.basename(current_wp) if current_wp else "Default")
+        self._add_pref_row(box, wp_label)
+
+        wp_btn = Gtk.Button(label="󰋩  Choose Wallpaper...")
+        wp_btn.set_margin_start(16)
+        wp_btn.set_margin_top(8)
+        wp_btn.connect("clicked", self.pick_wallpaper)
+        box.append(wp_btn)
+
+        self._add_section(box, "Taskbar")
+        taskbar_pos = self._combo_row("Position", "Taskbar screen position",
+            ["bottom", "top"], "bottom")
+        taskbar_height = self._spin_row("Height", "Taskbar height in pixels", 32, 64, 44, 4)
+        autohide_row = self._switch_row("Auto-hide", "Hide taskbar when not in use", False)
+        blur_taskbar = self._switch_row("Blur Background", "Blur behind the taskbar", False)
+        for row in [taskbar_pos, taskbar_height[0], autohide_row, blur_taskbar]:
+            self._add_pref_row(box, row)
+
+        self._add_section(box, "Dock")
+        dock_enabled = self._switch_row("Enable Dock", "Show macOS-style app dock", False)
+        dock_autohide = self._switch_row("Auto-hide Dock", "Hide dock when window is near", True)
+        dock_size = self._spin_row("Icon Size", "Dock icon size in pixels", 32, 80, 48, 8)
+        for row in [dock_enabled, dock_autohide, dock_size[0]]:
+            self._add_pref_row(box, row)
+
+        apply_btn2 = Gtk.Button(label="Apply Desktop Settings")
+        apply_btn2.add_css_class("suggested-action")
+        apply_btn2.set_margin_top(12)
+        apply_btn2.set_margin_start(16)
+        apply_btn2.set_margin_end(16)
+        apply_btn2.connect("clicked", lambda _: reload_shell())
+        box.append(apply_btn2)
+
+        return box
+
+    def page_drivers(self):
+        box = self._page_box("Drivers", "GPU driver information and status")
+
+        gpu_model  = self.hw.get("GPU_MODEL",  "Unknown GPU")
+        gpu_driver = self.hw.get("GPU_DRIVER", "unknown")
+        gpu_wayland= self.hw.get("GPU_WAYLAND","false")
+        kernel_pkg = self.hw.get("KERNEL_PKG", "linux")
+
+        self._add_section(box, "Detected Hardware")
+        self._add_pref_row(box, self._info_row("GPU Model",  gpu_model))
+        self._add_pref_row(box, self._info_row("Driver",     gpu_driver))
+        self._add_pref_row(box, self._info_row("Wayland",    "Supported ✓" if gpu_wayland == "true" else "Not supported (X11 only)"))
+        self._add_pref_row(box, self._info_row("Kernel",     kernel_pkg))
+
+        self._add_section(box, "DKMS Status")
+        dkms_output = run(["dkms", "status"]) or "dkms not installed or no modules"
+        dkms_label = Gtk.Label(label=dkms_output)
+        dkms_label.set_xalign(0)
+        dkms_label.set_margin_start(16)
+        dkms_label.set_margin_top(8)
+        dkms_label.set_margin_bottom(8)
+        dkms_label.set_selectable(True)
+        dkms_label.set_wrap(True)
+        dkms_label.add_css_class("pref-sublabel")
+
+        # Show 390xx warning if applicable
+        if "390xx" in gpu_driver:
+            warn = Gtk.Label()
+            warn.set_markup(
+                "<span foreground='#FBBF24'>󰀦 NVIDIA 390xx legacy driver installed.\n"
+                "This driver supports: GT 610, GT 710, GT 720, GTX 650–680.\n"
+                "Wayland is NOT supported. X11/Openbox mode is active.</span>"
+            )
+            warn.set_xalign(0)
+            warn.set_margin_start(16)
+            warn.set_margin_top(12)
+            warn.set_wrap(True)
+            box.append(warn)
+
+        box.append(dkms_label)
+
+        reinstall_btn = Gtk.Button(label="Reinstall GPU Driver")
+        reinstall_btn.set_margin_start(16)
+        reinstall_btn.set_margin_top(8)
+        reinstall_btn.connect("clicked", lambda _: subprocess.Popen(
+            ["pkexec", "dkms", "autoinstall"], close_fds=True))
+        box.append(reinstall_btn)
+
+        return box
+
+    def page_about(self):
+        box = self._page_box("About", "")
+
+        center = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        center.set_halign(Gtk.Align.CENTER)
+        center.set_margin_top(24)
+        center.set_margin_bottom(24)
+
+        logo = Gtk.Label(label="🚀")
+        logo.set_markup("<span size='xx-large'>🚀</span>")
+        logo.set_halign(Gtk.Align.CENTER)
+
+        name_l = Gtk.Label(label="Apollo Linux")
+        name_l.add_css_class("about-header")
+
+        ver_l = Gtk.Label(label="Version 1.0 (Rolling)")
+        ver_l.add_css_class("about-ver")
+
+        desc = Gtk.Label(label="Fast, beautiful and compatible.\nBuilt on Arch Linux.")
+        desc.set_halign(Gtk.Align.CENTER)
+        desc.set_justify(Gtk.Justification.CENTER)
+
+        links = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        links.set_halign(Gtk.Align.CENTER)
+        links.set_margin_top(12)
+        for lbl, url in [("󰣸  GitHub", "https://github.com/strayfodanator/apollolinux"),
+                         ("  Website",   "https://apollolinux.org"),
+                         ("  Report Bug","https://github.com/strayfodanator/apollolinux/issues")]:
+            btn = Gtk.Button(label=lbl)
+            btn.connect("clicked", lambda _, u=url: subprocess.Popen(["xdg-open", u]))
+            links.append(btn)
+
+        center.append(logo)
+        center.append(name_l)
+        center.append(ver_l)
+        center.append(desc)
+        center.append(links)
+
+        self._add_section(box, "Hardware")
+        for key, label in [("GPU_MODEL","GPU"),("GPU_DRIVER","Driver"),("RAM_MB","RAM"),("CPU_SCORE","CPU")]:
+            val = self.hw.get(key, "—")
+            if key == "RAM_MB":
+                try: val = f"{int(val)//1024} GB"
+                except: pass
+            self._add_pref_row(box, self._info_row(label, val))
+
+        box.prepend(center)
+        return box
+
+    # ── Widget helpers ────────────────────────────────────────────
+
+    def _page_box(self, title: str, subtitle: str) -> Gtk.Box:
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        box.set_margin_start(24)
+        box.set_margin_end(24)
+        box.set_margin_top(16)
+        box.set_margin_bottom(24)
+        if title:
+            head = Gtk.Label(label=title)
+            head.set_markup(f"<span size='x-large' weight='bold' foreground='#E8EAF0'>{title}</span>")
+            head.set_xalign(0)
+            head.set_margin_bottom(2)
+            sub = Gtk.Label(label=subtitle)
+            sub.add_css_class("pref-sublabel")
+            sub.set_xalign(0)
+            sub.set_margin_bottom(16)
+            box.append(head)
+            box.append(sub)
+        return box
+
+    def _add_section(self, box: Gtk.Box, label: str):
+        lbl = Gtk.Label(label=label)
+        lbl.add_css_class("section-title")
+        lbl.set_xalign(0)
+        box.append(lbl)
+
+    def _add_pref_row(self, box: Gtk.Box, row_widget):
+        if isinstance(row_widget, tuple):
+            row_widget = row_widget[0]
+        frame = Gtk.Frame()
+        frame.set_child(row_widget)
+        frame.add_css_class("pref-group")
+        frame.set_margin_bottom(4)
+        box.append(frame)
+
+    def _info_row(self, label: str, value: str) -> Gtk.Box:
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.set_margin_start(14); row.set_margin_end(14)
+        row.set_margin_top(10); row.set_margin_bottom(10)
+        lbl = Gtk.Label(label=label)
+        lbl.set_xalign(0); lbl.set_hexpand(True)
+        lbl.add_css_class("pref-label")
+        val = Gtk.Label(label=value)
+        val.add_css_class("pref-sublabel")
+        val.set_selectable(True)
+        row.append(lbl); row.append(val)
+        return row
+
+    def _switch_row(self, label: str, subtitle: str, default: bool) -> Gtk.Box:
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.set_margin_start(14); row.set_margin_end(14)
+        row.set_margin_top(8); row.set_margin_bottom(8)
+        col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        col.set_hexpand(True)
+        lbl = Gtk.Label(label=label); lbl.add_css_class("pref-label"); lbl.set_xalign(0)
+        sub = Gtk.Label(label=subtitle); sub.add_css_class("pref-sublabel"); sub.set_xalign(0)
+        sub.set_wrap(True)
+        col.append(lbl); col.append(sub)
+        sw = Gtk.Switch(); sw.set_active(default); sw.set_valign(Gtk.Align.CENTER)
+        row.append(col); row.append(sw)
+        return row
+
+    def _combo_row(self, label: str, subtitle: str, options: list, default: str) -> Gtk.Box:
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.set_margin_start(14); row.set_margin_end(14)
+        row.set_margin_top(8); row.set_margin_bottom(8)
+        col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        col.set_hexpand(True)
+        lbl = Gtk.Label(label=label); lbl.add_css_class("pref-label"); lbl.set_xalign(0)
+        sub = Gtk.Label(label=subtitle); sub.add_css_class("pref-sublabel"); sub.set_xalign(0)
+        col.append(lbl); col.append(sub)
+        model = Gtk.StringList.new(options)
+        dd = Gtk.DropDown(model=model)
+        try: dd.set_selected(options.index(default))
+        except ValueError: dd.set_selected(0)
+        dd.set_valign(Gtk.Align.CENTER)
+        row.append(col); row.append(dd)
+        return row
+
+    def _spin_row(self, label: str, subtitle: str, min_: int, max_: int, val: int, step: int):
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.set_margin_start(14); row.set_margin_end(14)
+        row.set_margin_top(8); row.set_margin_bottom(8)
+        col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        col.set_hexpand(True)
+        lbl = Gtk.Label(label=label); lbl.add_css_class("pref-label"); lbl.set_xalign(0)
+        sub = Gtk.Label(label=subtitle); sub.add_css_class("pref-sublabel"); sub.set_xalign(0)
+        col.append(lbl); col.append(sub)
+        adj = Gtk.Adjustment(value=val, lower=min_, upper=max_, step_increment=step)
+        spin = Gtk.SpinButton(adjustment=adj)
+        spin.set_valign(Gtk.Align.CENTER)
+        row.append(col); row.append(spin)
+        return row, spin
+
+    def pick_wallpaper(self, _):
+        dialog = Gtk.FileDialog()
+        dialog.set_title("Choose Wallpaper")
+        ff = Gtk.FileFilter()
+        ff.set_name("Images")
+        ff.add_mime_type("image/png")
+        ff.add_mime_type("image/jpeg")
+        ff.add_mime_type("image/webp")
+        ffl = Gtk.FilterListModel.new(None, ff)
+        dialog.set_default_filter(ff)
+        dialog.open(None, None, self._on_wallpaper_chosen)
+
+    def _on_wallpaper_chosen(self, dialog, result):
+        try:
+            f = dialog.open_finish(result)
+            path = f.get_path()
+            os.makedirs(CONFIG_DIR, exist_ok=True)
+            with open(WALLPAPER_FILE, "w") as fp:
+                fp.write(path)
+            run(["feh", "--no-fehbg", "--bg-fill", path])
+        except Exception:
+            pass
+
+
+if __name__ == "__main__":
+    app = ApolloControlCenter()
+    app.run(sys.argv)

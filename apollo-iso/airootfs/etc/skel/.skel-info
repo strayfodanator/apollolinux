@@ -1,0 +1,17 @@
+# Apollo Linux default user skeleton
+# Copied to each new user's home at account creation
+
+# ~/.config/gtk-3.0/settings.ini  →  installed by apollo-themes
+# ~/.config/openbox/               →  symlinked from /usr/share/apollo/openbox
+# ~/.config/picom/                 →  copied from /usr/share/apollo/picom
+# ~/.config/dunst/                 →  copied from /usr/share/apollo/dunst
+# ~/.config/alacritty/             →  copied from /usr/share/apollo/alacritty
+# ~/.config/hypr/                  →  copied from /usr/share/apollo/hyprland (if Hyprland mode)
+
+# This file is intentionally minimal.
+# The actual skel directory is assembled during:
+#  1. ISO build (build.sh copies /usr/share/apollo/* configs)
+#  2. Calamares (apollo-desktop-select.py copies to /etc/skel in target)
+#  3. User creation (adduser copies /etc/skel to ~/)
+#
+# Result: every new user gets Apollo Desktop configured out-of-the-box.
