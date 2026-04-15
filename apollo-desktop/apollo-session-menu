@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+#
+# Apollo Linux — apollo-session-menu
+# Session management dialog (logout/reboot/shutdown/suspend/lock)
+# Referenced in: openbox/rc.xml (Super+Shift+E) and hyprland.conf
+#
+# Uses zenity for a clean dialog, falls back to dmenu/rofi if available.
+
+set -euo pipefail
+
+C_RESET='\033[0m'
+C_CYAN='\033[36m'
+
+OPTS=(
+    "  Lock Screen"
+    "󰒲  Suspend"
+    "  Log Out"
+    "󰜉  Restart"
+    "  Shut Down"
+    "  Cancel"
+)
+
+# ── Backend selection ─────────────────────────────────────────────────────────
+# Try zenity first (GTK), then yad, then rofi, then dmenu
+pick_option() {
+    local choice=""
+
+    if command -v zenity &>/dev/null && [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; then
+        choice=$(printf '%s\n' "${OPTS[@]}" | \
+            zenity --list \
+                   --title="Apollo Linux — Session" \
+                   --column="Action" \
+                   --width=280 --height=320 \
+                   --hide-header \
+                   2>/dev/null) || true
+
+    elif command -v wofi &>/dev/null && [ -n "${WAYLAND_DISPLAY:-}" ]; then
+        choice=$(printf '%s\n' "${OPTS[@]}" | \
+            wofi --dmenu \
+                 --prompt "Session:" \
+                 --insensitive \
+                 --width 260 --height 240 \
+                 2>/dev/null) || true
+
+    elif command -v rofi &>/dev/null; then
+        choice=$(printf '%s\n' "${OPTS[@]}" | \
+            rofi -dmenu \
+                 -p "Session:" \
+                 -i \
+                 -theme-str 'window {width: 240px;}' \
+                 2>/dev/null) || true
+
+    elif command -v dmenu &>/dev/null; then
+        choice=$(printf '%s\n' "${OPTS[@]}" | \
+            dmenu -p "Session:" -fn "FiraCode Nerd Font:size=11" \
+                  -nb "#0f1117" -nf "#E8EAF0" \
+                  -sb "#6C8EFF" -sf "#ffffff" \
+                  2>/dev/null) || true
+    fi
+
+    echo "$choice"
+}
+
+# ── Execute selected action ───────────────────────────────────────────────────
+execute_action() {
+    local choice="$1"
+    case "$choice" in
+        *"Lock Screen"*)
+            if [ -n "${WAYLAND_DISPLAY:-}" ]; then
+                loginctl lock-session
+            else
+                xscreensaver-command -lock 2>/dev/null || \
+                    i3lock -c 0f1117 2>/dev/null || \
+                    xdg-screensaver lock
+            fi
+            ;;
+        *"Suspend"*)
+            systemctl suspend
+            ;;
+        *"Log Out"*)
+            if [ -n "${WAYLAND_DISPLAY:-}" ]; then
+                # Hyprland
+                hyprctl dispatch exit 2>/dev/null || \
+                    loginctl terminate-session "$XDG_SESSION_ID"
+            else
+                # Openbox
+                openbox --exit 2>/dev/null || \
+                    loginctl terminate-session "$XDG_SESSION_ID"
+            fi
+            ;;
+        *"Restart"*)
+            # Confirm before rebooting
+            if command -v zenity &>/dev/null; then
+                zenity --question --title="Apollo Linux" \
+                       --text="Restart the computer?" \
+                       --width=260 2>/dev/null \
+                && systemctl reboot
+            else
+                systemctl reboot
+            fi
+            ;;
+        *"Shut Down"*)
+            if command -v zenity &>/dev/null; then
+                zenity --question --title="Apollo Linux" \
+                       --text="Shut down the computer?" \
+                       --width=260 2>/dev/null \
+                && systemctl poweroff
+            else
+                systemctl poweroff
+            fi
+            ;;
+        *"Cancel"*|"")
+            exit 0
+            ;;
+    esac
+}
+
+CHOICE=$(pick_option)
+execute_action "$CHOICE"

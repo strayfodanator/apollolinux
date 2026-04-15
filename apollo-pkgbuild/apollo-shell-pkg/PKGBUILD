@@ -1,0 +1,86 @@
+# Maintainer: Apollo Linux Team <dev@apollolinux.org>
+#
+# apollo-shell-pkg — Packages the Apollo Shell (QuickShell panels)
+# Installs: QML files, configs, CLI tools, systemd user service
+
+pkgname=apollo-shell-pkg
+pkgver=1.0
+pkgrel=1
+pkgdesc="Apollo Shell — QuickShell-based panels for Apollo Desktop"
+arch=('any')
+url="https://github.com/strayfodanator/apollolinux"
+license=('GPL-2.0')
+depends=(
+    'quickshell'
+    'wmctrl'         # window list / workspace switching
+    'xdotool'        # active window title
+    'socat'          # IPC socket communication
+    'dunst'          # notification daemon + dunstctl
+    'python'         # apollo-plugin CLI
+    'curl'           # weather plugin
+)
+optdepends=(
+    'networkmanager: network status widget'
+    'pipewire: volume widget (PipeWire backend)'
+    'upower: battery widget'
+    'playerctl: media player controls'
+    'brightnessctl: brightness keys'
+)
+source=("apollo-shell-${pkgver}.tar.gz::https://github.com/strayfodanator/apollolinux/archive/refs/heads/main.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+    local _src="${srcdir}/apollolinux-main/apollo-shell"
+
+    # ── QML Shell files ──────────────────────────────────────────
+    install -dm755 "${pkgdir}/usr/share/apollo/shell"
+    cp -r "${_src}/main.qml"    "${pkgdir}/usr/share/apollo/shell/"
+    cp -r "${_src}/panels"      "${pkgdir}/usr/share/apollo/shell/"
+    cp -r "${_src}/widgets"     "${pkgdir}/usr/share/apollo/shell/"
+    cp -r "${_src}/plugins"     "${pkgdir}/usr/share/apollo/shell/"
+
+    # ── Default config ───────────────────────────────────────────
+    install -Dm644 "${_src}/config/apollo-shell.json" \
+        "${pkgdir}/usr/share/apollo/shell/apollo-shell.json"
+
+    # ── CLI tools ─────────────────────────────────────────────────
+    install -Dm755 "${_src}/apollo-plugin" \
+        "${pkgdir}/usr/bin/apollo-plugin"
+    install -Dm755 "${_src}/apollo-shell-action" \
+        "${pkgdir}/usr/bin/apollo-shell-action"
+
+    # ── Systemd user service (auto-start on login) ────────────────
+    install -dm755 "${pkgdir}/usr/lib/systemd/user"
+    cat > "${pkgdir}/usr/lib/systemd/user/apollo-shell.service" <<EOF
+[Unit]
+Description=Apollo Shell (QuickShell panels)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStartPre=/bin/sh -c 'mkdir -p \${XDG_CONFIG_HOME:-\$HOME/.config}/apollo-shell'
+ExecStartPre=/bin/sh -c 'cp -n /usr/share/apollo/shell/apollo-shell.json \${XDG_CONFIG_HOME:-\$HOME/.config}/apollo-shell/apollo-shell.json'
+ExecStart=quickshell -config /usr/share/apollo/shell/main.qml \
+    -override "configFile=\${XDG_CONFIG_HOME:-\$HOME/.config}/apollo-shell/apollo-shell.json"
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+
+    # ── XDG autostart entry (for LightDM sessions without systemd) ─
+    install -dm755 "${pkgdir}/etc/xdg/autostart"
+    cat > "${pkgdir}/etc/xdg/autostart/apollo-shell.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Apollo Shell
+GenericName=Desktop Shell
+Comment=Apollo Linux shell (panels, taskbar, system tray)
+Exec=quickshell -config /usr/share/apollo/shell/main.qml
+Icon=apollo-linux
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
+EOF
+}

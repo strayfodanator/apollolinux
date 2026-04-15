@@ -1,0 +1,90 @@
+# Maintainer: Apollo Linux Team <dev@apollolinux.org>
+#
+# apollo-apps — Bundles apollo-welcome, apollo-control, apollo-session-menu
+# These are the core Apollo Desktop management apps
+
+pkgname=apollo-apps
+pkgver=1.0
+pkgrel=1
+pkgdesc="Apollo Linux apps: Welcome, Control Center, Session menu"
+arch=('any')
+url="https://github.com/strayfodanator/apollolinux"
+license=('GPL-2.0')
+depends=(
+    'python'
+    'python-gobject'
+    'gtk4'
+    'libadwaita'
+    'zenity'          # session-menu primary backend
+    'xdg-utils'       # xdg-open for links
+)
+optdepends=(
+    'feh: wallpaper changer in Control Center'
+    'wofi: session-menu on Wayland'
+    'rofi: session-menu alternative'
+    'brightnessctl: display brightness in Control Center'
+)
+source=("apollo-apps-${pkgver}.tar.gz::https://github.com/strayfodanator/apollolinux/archive/refs/heads/main.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+    local _src="${srcdir}/apollolinux-main/apollo-desktop"
+
+    # ── Python apps ──────────────────────────────────────────────
+    install -Dm755 "${_src}/apollo-welcome"      "${pkgdir}/usr/bin/apollo-welcome"
+    install -Dm755 "${_src}/apollo-control"      "${pkgdir}/usr/bin/apollo-control"
+    install -Dm755 "${_src}/apollo-session-menu" "${pkgdir}/usr/bin/apollo-session-menu"
+
+    # ── Hardware detection script ─────────────────────────────────
+    install -Dm755 "${srcdir}/apollolinux-main/apollo-iso/airootfs/etc/apollo/detect-hardware.sh" \
+        "${pkgdir}/etc/apollo/detect-hardware.sh"
+
+    # ── .desktop entries ─────────────────────────────────────────
+    install -dm755 "${pkgdir}/usr/share/applications"
+
+    cat > "${pkgdir}/usr/share/applications/apollo-control.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Apollo Control Center
+GenericName=System Settings
+Comment=Configure Apollo Desktop appearance and behavior
+Exec=apollo-control
+Icon=preferences-system
+Categories=Settings;DesktopSettings;GTK;
+Keywords=settings;theme;display;drivers;appearance;
+StartupNotify=true
+EOF
+
+    cat > "${pkgdir}/usr/share/applications/apollo-welcome.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Apollo Welcome
+GenericName=Welcome Screen
+Comment=Welcome to Apollo Linux
+Exec=apollo-welcome
+Icon=apollo-linux
+Categories=Utility;
+NoDisplay=true
+Keywords=welcome;first-boot;
+EOF
+
+    # ── Polkit policy (for driver reinstall in Control Center) ────
+    install -dm755 "${pkgdir}/usr/share/polkit-1/actions"
+    cat > "${pkgdir}/usr/share/polkit-1/actions/org.apollolinux.control.policy" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <action id="org.apollolinux.control.reinstall-driver">
+    <description>Reinstall GPU Driver</description>
+    <message>Authentication required to reinstall the GPU driver</message>
+    <icon_name>preferences-system</icon_name>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+</policyconfig>
+EOF
+}

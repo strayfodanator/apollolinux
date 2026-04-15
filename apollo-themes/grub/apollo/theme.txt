@@ -1,0 +1,88 @@
+# Apollo Linux — GRUB Theme
+# apollo-themes/grub/apollo/theme.txt
+#
+# Place at: /boot/grub/themes/apollo/theme.txt
+
+# ── Global layout ─────────────────────────────────────────────────────────────
+title-text: ""
+desktop-image: "background.png"
+desktop-color: "#0f1117"
+terminal-box: "terminal_c.png"
+terminal-font: "FiraCode Nerd Font Regular 14"
+
+# ── Boot menu ─────────────────────────────────────────────────────────────────
++ boot_menu {
+    left   = 25%
+    top    = 30%
+    width  = 50%
+    height = 40%
+
+    item_color            = "#8890A4"
+    selected_item_color   = "#E8EAF0"
+    item_font             = "FiraCode Nerd Font Regular 14"
+    selected_item_font    = "FiraCode Nerd Font Bold 14"
+
+    icon_width  = 32
+    icon_height = 32
+    item_height = 48
+    item_padding = 16
+    item_spacing = 4
+
+    # Selected item background
+    selected_background = "#1a1d27"
+
+    # Scrollbar
+    scrollbar             = true
+    scrollbar_width       = 4
+    scrollbar_thumb       = "#6C8EFF"
+    scrollbar_frame       = "#252836"
+
+    # Highlight bar
+    item_pixmap_style     = "select_c.png"
+}
+
+# ── Title label ───────────────────────────────────────────────────────────────
++ label {
+    left  = 0
+    top   = 12%
+    width = 100%
+    align = "center"
+    id    = "__title__"
+    text  = "Apollo Linux"
+    font  = "FiraCode Nerd Font Bold 28"
+    color = "#6C8EFF"
+}
+
++ label {
+    left  = 0
+    top   = 19%
+    width = 100%
+    align = "center"
+    text  = "Fast · Beautiful · Compatible"
+    font  = "FiraCode Nerd Font Regular 13"
+    color = "#8890A4"
+}
+
+# ── Countdown timer ───────────────────────────────────────────────────────────
++ label {
+    left  = 0
+    top   = 76%
+    width = 100%
+    align = "center"
+    id    = "__timeout__"
+    text  = "Booting in %d seconds..."
+    font  = "FiraCode Nerd Font Regular 12"
+    color = "#4a5066"
+}
+
+# ── Progress bar ──────────────────────────────────────────────────────────────
++ progress_bar {
+    id         = "__timeout_bar__"
+    left       = 30%
+    top        = 80%
+    width      = 40%
+    height     = 3
+    bg_color   = "#252836"
+    fg_color   = "#6C8EFF"
+    border_size = 0
+}
