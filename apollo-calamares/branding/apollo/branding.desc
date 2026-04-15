@@ -1,0 +1,61 @@
+---
+# Apollo Linux — Calamares branding descriptor
+# Controls: logo, colors, welcome text, slideshow
+
+componentName: apollo
+
+# Main logo (shown in installer header)
+# Path relative to this branding directory
+logo: apollo-logo.png
+
+# Product info
+product: Apollo Linux
+version: "1.0"
+shortVersion: "1.0"
+versionedName: "Apollo Linux 1.0"
+productUrl: "https://apollolinux.org"
+supportUrl: "https://github.com/strayfodanator/apollolinux/issues"
+knownIssuesUrl: "https://github.com/strayfodanator/apollolinux/issues"
+releaseNotesUrl: "https://apollolinux.org/release-notes"
+
+# Welcome widget texts (shown on first Calamares page)
+welcomeStyleCalamares: false
+welcomeExpandingLogo: true
+
+# Sidebar colors (dark Apollo theme)
+sidebarBackground: "#0f1117"
+sidebarText: "#E8EAF0"
+sidebarTextSelect: "#FFFFFF"
+sidebarTextHighlight: "#6C8EFF"
+
+# Window geometry
+windowExpanding: normal
+windowSize: "900px,600px"
+windowPlacement: center
+
+# Navigation buttons
+navigationButtonWeight: slim
+
+# Slideshow shown during installation
+slideshowAPI: 2
+slideshow: "slideshow.qml"
+
+# Strings used in various places
+strings:
+  knownIssuesUrl: "https://github.com/strayfodanator/apollolinux/issues"
+
+  # Shown in welcome page
+  welcomeMessage: |
+    Bem-vindo ao instalador do <strong>Apollo Linux</strong>.<br/><br/>
+    Detectamos seu hardware e já selecionamos os drivers e ambiente 
+    de desktop ideais para você.<br/>
+    A instalação leva aproximadamente <strong>10–15 minutos</strong>.
+
+  # Shown in summary before install
+  summaryFooter: |
+    Ao clicar em <em>Instalar</em>, as mudanças serão aplicadas permanentemente.
+
+  # Shown when install completes  
+  finishedMessage: |
+    <strong>Apollo Linux foi instalado com sucesso!</strong><br/><br/>
+    Remova a mídia de instalação e reinicie o computador.

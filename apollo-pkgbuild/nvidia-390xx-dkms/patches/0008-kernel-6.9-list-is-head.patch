@@ -1,0 +1,37 @@
+From: Apollo Linux Team <dev@apollolinux.org>
+Subject: [PATCH 08/12] nvidia-390xx: fix list_is_head usage (kernel 6.9)
+
+Kernel 6.9 added list_is_head() as a required internal for some list
+traversal macros that the nvidia-390xx driver uses in its own list
+implementation. Older kernels don't have list_is_head().
+
+Also fixes 'struct vm_fault' field renames for fault handler in 6.9.
+
+Signed-off-by: Apollo Linux Team <dev@apollolinux.org>
+---
+diff --git a/kernel/nvidia/nv-list.h b/kernel/nvidia/nv-list.h
+new file mode 100644
+--- /dev/null
++++ b/kernel/nvidia/nv-list.h
+@@ -0,0 +1,22 @@
++#pragma once
++#include <linux/version.h>
++#include <linux/list.h>
++
++/* list_is_head() was added in kernel 5.15 upstream but is used
++   by some internal macros that 390xx tries to redefine.
++   Provide compat for anything < 5.15 and guard against double-def. */
++#ifndef list_is_head
++static inline int list_is_head(const struct list_head *list,
++                                const struct list_head *head)
++{
++    return list->next == head->next && list->prev == head;
++}
++#endif
++
++/* kernel 6.9 vm_fault field rename */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 9, 0)
++#define NV_VM_FAULT_ADDRESS(vmf) ((vmf)->real_address)
++#else
++#define NV_VM_FAULT_ADDRESS(vmf) ((vmf)->address)
++#endif

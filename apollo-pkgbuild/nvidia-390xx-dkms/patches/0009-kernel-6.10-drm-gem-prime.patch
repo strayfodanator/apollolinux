@@ -1,0 +1,31 @@
+From: Apollo Linux Team <dev@apollolinux.org>
+Subject: [PATCH 09/12] nvidia-390xx: fix drm_gem_prime (kernel 6.10)
+
+Kernel 6.10 reorganized the DRM GEM prime helpers.
+drm_gem_prime_export/import are no longer in nvidia's used path.
+drm_prime_sg_to_page_addr_arrays removed.
+
+Also handles removal of __vmalloc fallback path used in UVM.
+
+Signed-off-by: Apollo Linux Team <dev@apollolinux.org>
+---
+diff --git a/kernel/nvidia-drm/nvidia-drm-prime-fence.c b/kernel/nvidia-drm/nvidia-drm-prime-fence.c
+--- a/kernel/nvidia-drm/nvidia-drm-prime-fence.c
++++ b/kernel/nvidia-drm/nvidia-drm-prime-fence.c
+@@ -1,8 +1,16 @@
++#include <linux/version.h>
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 10, 0)
++/* drm_prime_sg_to_page_addr_arrays removed — use scatterlist iteration */
++#define NV_PRIME_SG_TO_PAGES(sg, pages, addrs, nents) \
++    do { \
++        struct scatterlist *__sg; unsigned int __i = 0; \
++        for_each_sg((sg), __sg, (nents), __i) { \
++            (pages)[__i] = sg_page(__sg); \
++            if (addrs) (addrs)[__i] = sg_phys(__sg); \
++        } \
++    } while (0)
++#else
++#define NV_PRIME_SG_TO_PAGES(sg, pages, addrs, nents) \
++    drm_prime_sg_to_page_addr_arrays(sg, pages, addrs, nents)
++#endif

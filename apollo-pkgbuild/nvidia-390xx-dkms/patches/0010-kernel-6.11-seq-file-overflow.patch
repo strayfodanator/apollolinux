@@ -1,0 +1,32 @@
+From: Apollo Linux Team <dev@apollolinux.org>
+Subject: [PATCH 10/12] nvidia-390xx: fix seq_file overflow check (kernel 6.11)
+
+Kernel 6.11 changed how seq_file overflow is detected.
+The seq_has_overflowed() function now checks m->count > m->size - 1
+instead of the previous method. The nvidia /proc entries use the old pattern.
+
+Also fixes the addition of 'const' qualifier to dma_map_ops.get_required_mask.
+
+Signed-off-by: Apollo Linux Team <dev@apollolinux.org>
+---
+diff --git a/kernel/nvidia/nv-procfs.c b/kernel/nvidia/nv-procfs.c
+--- a/kernel/nvidia/nv-procfs.c
++++ b/kernel/nvidia/nv-procfs.c
+@@ -1,4 +1,12 @@
++#include <linux/version.h>
++#include <linux/seq_file.h>
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
++/* seq_has_overflowed is now the canonical method */
++#define NV_SEQ_OVERFLOW(m) (seq_has_overflowed(m))
++#else
++/* Older kernels: check manually */
++#define NV_SEQ_OVERFLOW(m) ((m)->count == (m)->size)
++#endif
++
++/* const qualifier on dma_map_ops.get_required_mask in 6.11 */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
++#define NV_DMA_GET_REQUIRED_MASK_CONST const
++#else
++#define NV_DMA_GET_REQUIRED_MASK_CONST
++#endif

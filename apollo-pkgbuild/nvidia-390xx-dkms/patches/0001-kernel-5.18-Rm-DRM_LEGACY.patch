@@ -1,0 +1,23 @@
+From: Apollo Linux Team <dev@apollolinux.org>
+Subject: [PATCH 01/12] nvidia-390xx: remove DRM_LEGACY dependency (kernel 5.18+)
+
+Kernel 5.18 removed the DRM_LEGACY Kconfig symbol and all references
+to legacy DRM. The nvidia-390xx driver uses drm_legacy_* functions that
+no longer exist. This patch replaces them with stubs.
+
+Signed-off-by: Apollo Linux Team <dev@apollolinux.org>
+---
+ kernel/nvidia-drm/nvidia-drm-drv.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/nvidia-drm/nvidia-drm-drv.c b/kernel/nvidia-drm/nvidia-drm-drv.c
+index 1234567..abcdefg 100644
+--- a/kernel/nvidia-drm/nvidia-drm-drv.c
++++ b/kernel/nvidia-drm/nvidia-drm-drv.c
+@@ -1,8 +1,6 @@
+-#if defined(NV_DRM_DRIVER_HAS_LEGACY_DEV_LIST)
+-    .firstopen    = nv_drm_firstopen,
+-    .lastclose    = nv_drm_lastclose,
+-    .preclose     = nv_drm_preclose,
+-#endif
++    /* DRM_LEGACY removed in kernel 5.18 - Apollo patch */

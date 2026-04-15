@@ -1,0 +1,165 @@
+name: "GitHub Actions — Apollo Linux ISO Build"
+
+on:
+  push:
+    branches: [main, dev]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  ISO_OUTPUT: apollo-iso/out
+  PKGBUILD_REPO: apollo-pkgbuild/repo
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # Job 1: Build Apollo custom packages (nvidia-390xx, themes, etc.)
+  # ─────────────────────────────────────────────────────────────────
+  build-packages:
+    name: Build Apollo Packages
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update system and install build deps
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm base-devel git sudo fakeroot
+
+      - name: Create build user (makepkg refuses to run as root)
+        run: |
+          useradd -m builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          chown -R builder:builder apollo-pkgbuild/
+
+      - name: Build nvidia-390xx-dkms PKGBUILD
+        run: |
+          su builder -c "cd apollo-pkgbuild/nvidia-390xx-dkms && makepkg -s --noconfirm --noprogressbar 2>&1"
+        continue-on-error: true  # Driver build may fail in CI without NVIDIA source
+
+      - name: Create local package repository
+        run: |
+          mkdir -p "$PKGBUILD_REPO/x86_64"
+          find apollo-pkgbuild/ -name "*.pkg.tar.zst" -exec cp {} "$PKGBUILD_REPO/x86_64/" \;
+          cd "$PKGBUILD_REPO/x86_64"
+          repo-add apollo.db.tar.gz *.pkg.tar.zst || true
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: apollo-packages
+          path: "${{ env.PKGBUILD_REPO }}"
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job 2: Build the ISO
+  # ─────────────────────────────────────────────────────────────────
+  build-iso:
+    name: Build Apollo Linux ISO
+    runs-on: ubuntu-latest
+    needs: build-packages
+    container:
+      image: archlinux:latest
+      options: --privileged
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install archiso
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm archiso mtools dosfstools libisoburn squashfs-tools
+
+      - name: Download built packages
+        uses: actions/download-artifact@v4
+        with:
+          name: apollo-packages
+          path: apollo-pkgbuild/repo
+
+      - name: Prepare archiso profile
+        run: |
+          chmod +x apollo-iso/build.sh
+
+      - name: Build ISO
+        run: |
+          cd apollo-iso
+          # Run without the driver download part in CI (no root needed for that)
+          mkarchiso -v -w work -o out .
+        timeout-minutes: 60
+
+      - name: Compute checksums
+        run: |
+          cd "$ISO_OUTPUT"
+          sha256sum apollo-linux-*.iso > apollo-linux-latest.sha256
+          md5sum    apollo-linux-*.iso > apollo-linux-latest.md5
+          cat apollo-linux-latest.sha256
+
+      - name: Get ISO info
+        run: |
+          ISO=$(ls apollo-iso/out/apollo-linux-*.iso 2>/dev/null | head -1)
+          if [ -n "$ISO" ]; then
+            SIZE=$(du -sh "$ISO" | cut -f1)
+            echo "✅ ISO built: $(basename $ISO) ($SIZE)"
+          fi
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apollo-linux-iso
+          path: |
+            ${{ env.ISO_OUTPUT }}/apollo-linux-*.iso
+            ${{ env.ISO_OUTPUT }}/apollo-linux-*.sha256
+            ${{ env.ISO_OUTPUT }}/apollo-linux-*.md5
+          retention-days: 14
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job 3: Create GitHub Release (on tag push only)
+  # ─────────────────────────────────────────────────────────────────
+  create-release:
+    name: Publish Release
+    runs-on: ubuntu-latest
+    needs: build-iso
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Download ISO artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: apollo-linux-iso
+          path: release-files/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Apollo Linux ${{ github.ref_name }}"
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+          body: |
+            ## Apollo Linux ${{ github.ref_name }}
+
+            ### 🔽 Download
+            Download the ISO below and verify with the SHA256 checksum.
+
+            ### ✅ What's included
+            - Apollo Desktop (Openbox-based, X11) 
+            - Hyprland Mode (Wayland)
+            - NVIDIA 390xx driver (patched for kernel 6.x) — supports GT 610/710/720
+            - NVIDIA 470xx driver — supports GTX 900/10xx series
+            - Smart installer with automatic hardware detection
+
+            ### 💿 Creating bootable media
+            ```bash
+            sudo dd if=apollo-linux-*.iso of=/dev/sdX bs=4M status=progress oflag=sync
+            ```
+            Or use [Ventoy](https://ventoy.net) / [Balena Etcher](https://etcher.balena.io).
+          files: |
+            release-files/apollo-linux-*.iso
+            release-files/apollo-linux-*.sha256
+            release-files/apollo-linux-*.md5

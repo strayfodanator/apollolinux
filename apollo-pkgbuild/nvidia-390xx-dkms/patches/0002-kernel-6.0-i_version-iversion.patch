@@ -1,0 +1,33 @@
+From: Apollo Linux Team <dev@apollolinux.org>
+Subject: [PATCH 02/12] nvidia-390xx: fix i_version/inode_get_iversion (kernel 6.0)
+
+Kernel 6.0 changed how inode version numbers are accessed.
+The macros IS_I_VERSION and inode->i_version are replaced by
+inode_get_iversion() / inode_set_iversion() helpers.
+
+This also fixes the 'struct timespec' → ktime_t / timespec64 change
+that was finalized in 6.0.
+
+Signed-off-by: Apollo Linux Team <dev@apollolinux.org>
+---
+diff --git a/kernel/nvidia/nv-linux.h b/kernel/nvidia/nv-linux.h
+--- a/kernel/nvidia/nv-linux.h
++++ b/kernel/nvidia/nv-linux.h
+@@ -1,5 +1,14 @@
++#include <linux/iversion.h>
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
++#define NV_INODE_GET_VERSION(inode) inode_get_iversion(inode)
++#define NV_INODE_SET_VERSION(inode, ver) inode_set_iversion(inode, ver)
++#else
++#define NV_INODE_GET_VERSION(inode) ((inode)->i_version)
++#define NV_INODE_SET_VERSION(inode, ver) ((inode)->i_version = (ver))
++#endif
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
++typedef struct timespec64 NV_TIMESPEC;
++#define NV_TIMESPEC_GET(ts) ktime_to_timespec64(ts)
++#else
++typedef struct timespec NV_TIMESPEC;
++#define NV_TIMESPEC_GET(ts) (ts)
++#endif

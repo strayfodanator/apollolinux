@@ -1,0 +1,114 @@
+# Apollo Desktop — dunst notification configuration
+# Clean, minimal, Apollo-themed notifications
+
+[global]
+    ### Display
+    monitor = 0
+    follow = mouse
+    
+    ### Geometry
+    width = 340
+    height = (0, 200)
+    origin = top-right
+    offset = 12x52
+    scale = 0
+    notification_limit = 5
+    
+    ### Scrolling (mouse wheel)
+    mouse_left_click  = close_current
+    mouse_middle_click = do_action, close_current
+    mouse_right_click = close_all
+    
+    ### Progress bar (used by some apps)
+    progress_bar = true
+    progress_bar_height = 10
+    progress_bar_frame_width = 0
+    progress_bar_min_width = 150
+    progress_bar_max_width = 300
+    progress_bar_corner_radius = 5
+    
+    ### Timeouts
+    show_age_threshold = 60
+    indicate_hidden = yes
+    
+    ### Padding & layout
+    padding = 14
+    horizontal_padding = 16
+    text_icon_padding = 12
+    frame_width = 1
+    gap_size = 6
+    separator_height = 1
+    separator_color = "#252836"
+    
+    ### Appearance
+    # Apollo Dark theme
+    background = "#1a1d27"
+    foreground = "#E8EAF0"
+    frame_color = "#2e3248"
+    
+    # Icon size
+    icon_size = 32
+    icon_theme = "Papirus-Dark"
+    enable_recursive_icon_lookup = true
+    
+    # Corner radius (picom handles this, dunst respects it)
+    corner_radius = 10
+    
+    # Font: FiraCode Nerd Font
+    font = FiraCode Nerd Font 10
+    
+    # Markup and format
+    markup = full
+    format = "<b>%s</b>\n%b"
+    alignment = left
+    vertical_alignment = center
+    word_wrap = yes
+    ellipsize = middle
+    ignore_newline = no
+    
+    # Actions
+    show_indicators = yes
+    
+    ### History
+    sticky_history = yes
+    history_length = 20
+
+[urgency_low]
+    background = "#1a1d27"
+    foreground = "#8890A4"
+    frame_color = "#252836"
+    timeout = 4
+    default_icon = dialog-information
+
+[urgency_normal]
+    background = "#1a1d27"
+    foreground = "#E8EAF0"
+    frame_color = "#2e3248"
+    timeout = 6
+    default_icon = dialog-information
+
+[urgency_critical]
+    background = "#2d1b1b"
+    foreground = "#F87171"
+    frame_color = "#F87171"
+    timeout = 0
+    default_icon = dialog-error
+
+# ── App-specific rules ────────────────────────────────────────────────────────
+
+[volume-notification]
+    appname = "Volume"
+    format = "<b>%s</b>\n%b"
+    timeout = 2
+
+[battery-low]
+    appname = "upower"
+    summary = "*Low*"
+    background = "#2d2000"
+    foreground = "#FBBF24"
+    frame_color = "#FBBF24"
+    timeout = 0
+
+[screenshot]
+    appname = "flameshot"
+    timeout = 3

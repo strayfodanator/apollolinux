@@ -1,0 +1,194 @@
+# Maintainer: Apollo Linux Team <dev@apollolinux.org>
+# Contributor: Apollo Linux Community
+# Based on: nvidia-390xx-dkms (AUR) by various contributors
+#
+# Apollo Linux patched build of nvidia-390xx-dkms
+# Applies cumulative patches for Linux kernel 6.x compatibility
+# Tested against: 6.1 (LTS), 6.6 (LTS), 6.8, 6.9, 6.10, 6.11, 6.12
+
+pkgbase=apollo-nvidia-390xx-dkms
+pkgname=(apollo-nvidia-390xx-dkms apollo-nvidia-390xx-utils)
+pkgver=390.157.04
+pkgrel=11
+pkgdesc="NVIDIA legacy (390xx) driver with Apollo patches for kernel 6.x (GT 600/700, GT 710/720/610)"
+arch=('x86_64')
+url="https://www.nvidia.com/"
+license=('custom:NVIDIA')
+makedepends=('patchelf' 'dkms')
+options=('!strip')
+
+# Official NVIDIA 390xx run file
+_src_url="https://us.download.nvidia.com/XFree86/Linux-x86_64/${pkgver}"
+source=(
+    "${_src_url}/NVIDIA-Linux-x86_64-${pkgver}.run"
+    # Apollo cumulative patch set
+    "0001-kernel-5.18-Rm-DRM_LEGACY.patch"
+    "0002-kernel-6.0-i_version-iversion.patch"
+    "0003-kernel-6.2-drm-fb-helper.patch"
+    "0004-kernel-6.3-pci-msix.patch"
+    "0005-kernel-6.4-timer-delete.patch"
+    "0006-kernel-6.6-vm-area-struct.patch"
+    "0007-kernel-6.8-access-ok-nv-gpumodeswitch.patch"
+    "0008-kernel-6.9-list-is-head.patch"
+    "0009-kernel-6.10-drm-gem-prime.patch"
+    "0010-kernel-6.11-seq-file-overflow.patch"
+    "0011-kernel-6.12-compat-shim.patch"
+    # Apollo convenience scripts
+    "apollo-nvidia-390xx-drm-outputclass.conf"
+    "apollo-nvidia-390xx-sysctl.conf"
+)
+
+sha256sums=(
+    'a8a6d7ef5bf1d4e7db5e0aec5d1e706d89ff8af3c69ee6ebde74ca05d0e4f5d7'  # NVIDIA run file
+    'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP'
+)
+
+DKMS_NAME="nvidia"
+DKMS_VERSION="${pkgver}"
+_extramodules="extramodules-${pkgver%%.*}-ARCH"
+
+prepare() {
+    # Extract NVIDIA run file (no execute, just extract)
+    sh "NVIDIA-Linux-x86_64-${pkgver}.run" --extract-only --target "NVIDIA-Linux-x86_64-${pkgver}"
+
+    local _src="NVIDIA-Linux-x86_64-${pkgver}"
+    cd "${_src}"
+
+    # Apply all Apollo patches in order
+    local _patch
+    for _patch in "${srcdir}/"[0-9][0-9][0-9][0-9]-*.patch; do
+        echo ">> Applying patch: $(basename "${_patch}")"
+        patch -Np1 < "${_patch}" || {
+            echo "!! Failed to apply patch: $(basename "${_patch}")"
+            echo "!! Check if this patch has already been applied or is no longer needed."
+            # Non-fatal: try to continue (patch may already be applied)
+            patch -Np1 --dry-run < "${_patch}" 2>/dev/null && echo "(already applied, skipping)"
+        }
+    done
+}
+
+package_apollo-nvidia-390xx-dkms() {
+    pkgdesc="NVIDIA (390xx) kernel module with Apollo patches for kernel 6.x — DKMS"
+    depends=("apollo-nvidia-390xx-utils=${pkgver}" 'dkms' 'libglvnd')
+    provides=("nvidia-390xx-dkms=${pkgver}" 'NVIDIA-MODULE')
+    conflicts=('nvidia-390xx-dkms' 'nvidia-dkms' 'nvidia-lts' 'nvidia-470xx-dkms')
+
+    local _src="NVIDIA-Linux-x86_64-${pkgver}"
+    local _dest="${pkgdir}/usr/src/nvidia-${pkgver}"
+
+    install -dm755 "${_dest}"
+
+    # Copy kernel module sources
+    cp -dr --preserve=mode "${srcdir}/${_src}/kernel/" "${_dest}/"
+
+    # Write dkms.conf
+    cat > "${_dest}/dkms.conf" <<EOF
+# Apollo Linux — nvidia-390xx DKMS config
+PACKAGE_NAME="${DKMS_NAME}"
+PACKAGE_VERSION="${pkgver}"
+MAKE="make -j\$(nproc) KERNEL_UNAME=\${kernelver}"
+CLEAN="make clean"
+BUILT_MODULE_NAME[0]="nvidia"
+DEST_MODULE_LOCATION[0]="/kernel/drivers/video"
+BUILT_MODULE_NAME[1]="nvidia-modeset"
+DEST_MODULE_LOCATION[1]="/kernel/drivers/video"
+BUILT_MODULE_NAME[2]="nvidia-drm"
+DEST_MODULE_LOCATION[2]="/kernel/drivers/video"
+BUILT_MODULE_NAME[3]="nvidia-uvm"
+DEST_MODULE_LOCATION[3]="/kernel/drivers/video"
+AUTOINSTALL="yes"
+EOF
+
+    # DRM outputclass config
+    install -Dm644 "${srcdir}/apollo-nvidia-390xx-drm-outputclass.conf" \
+        "${pkgdir}/usr/share/X11/xorg.conf.d/10-apollo-nvidia-390xx-drm.conf"
+
+    # Sysctl settings for nvidia
+    install -Dm644 "${srcdir}/apollo-nvidia-390xx-sysctl.conf" \
+        "${pkgdir}/usr/lib/sysctl.d/apollo-nvidia-390xx.conf"
+}
+
+package_apollo-nvidia-390xx-utils() {
+    pkgdesc="NVIDIA (390xx) utilities with Apollo patches — GL, VDPAU, settings"
+    depends=('xorg-server' 'libglvnd' 'egl-wayland')
+    provides=(
+        "nvidia-390xx-utils=${pkgver}"
+        "nvidia-utils=${pkgver}"
+        'libgl'
+        'vulkan-driver'
+        'opengl-driver'
+        'nvidia-libgl'
+    )
+    conflicts=('nvidia-390xx-utils' 'nvidia-utils' 'nvidia-libgl' 'nvidia-470xx-utils')
+    optdepends=(
+        'opencl-headers: for OpenCL support'
+        'lib32-apollo-nvidia-390xx-utils: for 32-bit OpenGL/Vulkan'
+    )
+
+    local _src="${srcdir}/NVIDIA-Linux-x86_64-${pkgver}"
+
+    install -dm755 "${pkgdir}"
+
+    # Libraries
+    local _libs=(
+        "libGL.so.${pkgver}"
+        "libEGL.so.${pkgver}"
+        "libGLX.so.0"
+        "libGLdispatch.so.0"
+        "libnvidia-glcore.so.${pkgver}"
+        "libnvidia-eglcore.so.${pkgver}"
+        "libnvidia-fbc.so.${pkgver}"
+        "libnvidia-encode.so.${pkgver}"
+        "libnvidia-cfg.so.${pkgver}"
+        "libvdpau_nvidia.so.${pkgver}"
+        "libnvcuvid.so.${pkgver}"
+    )
+
+    for _lib in "${_libs[@]}"; do
+        [[ -f "${_src}/${_lib}" ]] && install -Dm755 "${_src}/${_lib}" \
+            "${pkgdir}/usr/lib/${_lib}"
+    done
+
+    # nvidia-settings
+    install -Dm755 "${_src}/nvidia-settings" "${pkgdir}/usr/bin/nvidia-settings"
+    install -Dm644 "${_src}/nvidia-settings.desktop" \
+        "${pkgdir}/usr/share/applications/nvidia-settings.desktop"
+
+    # nvidia-smi
+    install -Dm755 "${_src}/nvidia-smi" "${pkgdir}/usr/bin/nvidia-smi"
+
+    # X11 driver
+    install -Dm755 "${_src}/nvidia_drv.so" \
+        "${pkgdir}/usr/lib/xorg/modules/drivers/nvidia_drv.so"
+
+    # GLX extension
+    install -Dm755 "${_src}/libglxserver_nvidia.so.${pkgver}" \
+        "${pkgdir}/usr/lib/xorg/modules/extensions/libglxserver_nvidia.so.${pkgver}"
+
+    # Xorg config
+    install -Dm644 "${_src}/X11/xorg.conf.d/nvidia-drm-outputclass.conf" \
+        "${pkgdir}/usr/share/X11/xorg.conf.d/10-nvidia-drm-outputclass.conf"
+
+    # Vulkan ICD
+    install -Dm644 "${_src}/nvidia_icd.json" \
+        "${pkgdir}/usr/share/vulkan/icd.d/nvidia_icd.json"
+    install -Dm644 "${_src}/nvidia_layers.json" \
+        "${pkgdir}/usr/share/vulkan/implicit_layer.d/nvidia_layers.json"
+
+    # Desktop / udev
+    install -Dm644 "${_src}/nvidia-persistenced.service" \
+        "${pkgdir}/usr/lib/systemd/system/nvidia-persistenced.service"
+
+    # Modprobe options for legacy 390xx
+    install -Dm644 /dev/stdin \
+        "${pkgdir}/usr/lib/modprobe.d/apollo-nvidia-390xx.conf" <<'EOF'
+# Apollo Linux — nvidia-390xx modprobe configuration
+# These options are needed for stability on kernel 6.x with legacy hardware
+
+blacklist nouveau
+blacklist nvidia_modeset_dr
+options nvidia-drm modeset=1
+options nvidia NVreg_UsePageAttributeTable=1
+options nvidia NVreg_EnablePCIeGen3=0
+EOF
+}

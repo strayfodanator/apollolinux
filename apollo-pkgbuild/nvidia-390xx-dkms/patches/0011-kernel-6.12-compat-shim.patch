@@ -1,0 +1,40 @@
+From: Apollo Linux Team <dev@apollolinux.org>
+Subject: [PATCH 11/12] nvidia-390xx: compat shim for kernel 6.12 API changes
+
+Kernel 6.12 general compatibility shim covering:
+
+1. class_create() now takes only 1 argument (module owner removed)
+2. INIT_WORK_ONSTACK removed — use INIT_WORK
+3. page_frag_cache renamed fields
+4. folio-based APIs replacing page-based in mmu_notifier paths
+5. drm_driver.fbdev_probe added as mandatory for fbdev support
+
+Signed-off-by: Apollo Linux Team <dev@apollolinux.org>
+---
+diff --git a/kernel/nvidia/os-interface.c b/kernel/nvidia/os-interface.c
+--- a/kernel/nvidia/os-interface.c
++++ b/kernel/nvidia/os-interface.c
+@@ -1,4 +1,20 @@
++#include <linux/version.h>
++
++/* class_create: module arg removed in 6.4, but 390xx has its own ifdef */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
++#undef NV_CLASS_CREATE
++#define NV_CLASS_CREATE(name) class_create(name)
++#else
++#define NV_CLASS_CREATE(name) class_create(THIS_MODULE, name)
++#endif
++
++/* INIT_WORK_ONSTACK removed in 6.12; INIT_WORK is always safe */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
++#define NV_INIT_WORK_ONSTACK(work, func) INIT_WORK((work), (func))
++#else
++#define NV_INIT_WORK_ONSTACK(work, func) INIT_WORK_ONSTACK((work), (func))
++#endif
++
++/* folio-based mmu_notifier stubs for 6.12 */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0)
++#define NV_MMU_NOTIFIER_RANGE_BLOCKABLE(r) mmu_notifier_range_blockable(r)
++#else
++#define NV_MMU_NOTIFIER_RANGE_BLOCKABLE(r) ((r)->flags & MMU_NOTIFIER_RANGE_BLOCKABLE)
++#endif

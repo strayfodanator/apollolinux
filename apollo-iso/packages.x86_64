@@ -1,0 +1,246 @@
+# Apollo Linux — packages.x86_64
+# Packages installed in the LIVE environment (squashfs)
+# Driver packages are NOT listed here — they are cached separately
+# and installed by Calamares based on hardware detection.
+
+# ── Base System ──────────────────────────────────────────────────────────────
+base
+base-devel
+linux
+linux-lts
+linux-firmware
+linux-headers
+linux-lts-headers
+mkinitcpio
+mkinitcpio-archiso
+
+# ── Boot ─────────────────────────────────────────────────────────────────────
+grub
+efibootmgr
+os-prober
+dosfstools
+mtools
+
+# ── Networking ───────────────────────────────────────────────────────────────
+networkmanager
+network-manager-applet
+nm-connection-editor
+wireless_tools
+wpa_supplicant
+iwd
+dhclient
+nss-mdns
+avahi
+
+# ── Filesystem & Partition Tools ─────────────────────────────────────────────
+gparted
+parted
+e2fsprogs
+btrfs-progs
+xfsprogs
+f2fs-tools
+ntfs-3g
+exfatprogs
+dosfstools
+lvm2
+cryptsetup
+
+# ── Calamares Installer ───────────────────────────────────────────────────────
+calamares
+calamares-extensions
+python
+python-pyqt5
+python-yaml
+python-jsonschema
+boost-libs
+kpmcore
+polkit-qt5
+
+# ── Xorg / Display ────────────────────────────────────────────────────────────
+xorg-server
+xorg-xinit
+xorg-xrandr
+xorg-xrdb
+xorg-xsetroot
+xorg-xhost
+xorg-xdpyinfo
+xorg-xkill
+xorg-xauth
+xorg-xbacklight
+xterm
+mesa
+mesa-utils
+libva
+libva-utils
+vulkan-icd-loader
+
+# ── Apollo Desktop (Openbox-based) ────────────────────────────────────────────
+openbox
+obconf-qt
+python-xdg
+python-gobject
+python-cairo
+lxappearance
+qt5ct
+kvantum
+gtk3
+gtk4
+adwaita-icon-theme
+
+# Compositor
+picom
+
+# Panel & Shell (QuickShell)
+# quickshell  ← installed from Apollo repo, listed here for reference
+
+# Notifications
+dunst
+libnotify
+
+# App Launcher
+ulauncher
+
+# Wallpaper
+feh
+nitrogen
+
+# ── Apollo Desktop Applications ───────────────────────────────────────────────
+# File manager
+thunar
+thunar-archive-plugin
+thunar-volman
+gvfs
+gvfs-mtp
+gvfs-smb
+
+# Terminal
+alacritty
+foot
+
+# Text editor
+kate
+
+# Image viewer
+eog
+
+# Archive manager
+file-roller
+unzip
+unrar
+p7zip
+tar
+gzip
+
+# System monitor
+htop
+
+# Screenshot
+flameshot
+grim
+slurp
+
+# Bluetooth
+blueman
+bluez
+bluez-utils
+
+# Audio
+pipewire
+pipewire-alsa
+pipewire-pulse
+pipewire-jack
+wireplumber
+pavucontrol
+
+# Fonts
+noto-fonts
+noto-fonts-cjk
+noto-fonts-emoji
+ttf-liberation
+ttf-dejavu
+# Fira Code Nerd Fonts: installed from Apollo repo (nerd-fonts-fira-code)
+
+# ── Hyprland / Wayland ────────────────────────────────────────────────────────
+hyprland
+hyprpaper
+hyprlock
+hypridle
+waybar
+wofi
+wl-clipboard
+xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
+qt5-wayland
+qt6-wayland
+wayland
+wayland-utils
+wlroots
+swaync
+
+# ── Input & Locale ────────────────────────────────────────────────────────────
+ibus
+ibus-gtk3
+ibus-gtk4
+libinput
+xf86-input-libinput
+
+# ── Security & Auth ───────────────────────────────────────────────────────────
+polkit
+polkit-gnome
+gnome-keyring
+libsecret
+seahorse
+
+# ── Hardware Support ──────────────────────────────────────────────────────────
+udev
+upower
+acpi
+acpid
+lm_sensors
+fwupd
+dmidecode
+pciutils
+usbutils
+
+# ── AUR Helper ────────────────────────────────────────────────────────────────
+# yay is installed post-install via Apollo scripts
+git
+
+# ── Development (minimal, needed for DKMS) ────────────────────────────────────
+dkms
+gcc
+make
+patch
+pkgconf
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+curl
+wget
+rsync
+bash-completion
+man-db
+man-pages
+less
+nano
+vim
+zip
+which
+sudo
+shadow
+procps-ng
+findutils
+diffutils
+grep
+sed
+gawk
+coreutils
+
+# ── Calamares: Python deps for detection modules ──────────────────────────────
+python-pip
+hwinfo
+inxi
+
+# ── Live Environment Specifics ────────────────────────────────────────────────
+archiso
+memtest86+
+syslinux

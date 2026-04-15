@@ -1,0 +1,53 @@
+# Apollo Linux .gitignore
+
+# Build outputs
+apollo-iso/out/
+apollo-iso/work/
+*.iso
+*.img
+
+# Package build artifacts
+**/pkg/
+**/src/
+**/*.pkg.tar.zst
+**/*.pkg.tar.xz
+**/*.log
+
+# Driver cache (too large for git, populated at build time)
+apollo-iso/driver-cache/x86_64/*.pkg.tar.zst
+
+# Node / Electron / Tauri
+node_modules/
+dist/
+build/
+target/
+.svelte-kit/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.key
+*.pem
+*.gpg
+!apollo-iso/airootfs/etc/pacman.d/gnupg/.gitkeep
+
+# Temporary
+tmp/
+temp/

@@ -1,0 +1,269 @@
+{
+  "$schema": "apollo-shell-config-v1",
+  "version": "1.0",
+
+  "theme": {
+    "background": "#0f1117",
+    "surface": "#1a1d27",
+    "overlay": "#252836",
+    "accent": "#6C8EFF",
+    "accent2": "#A78BFA",
+    "text": "#E8EAF0",
+    "textMuted": "#8890A4",
+    "success": "#4ADE80",
+    "warning": "#FBBF24",
+    "error": "#F87171",
+    "border": "#2e3248",
+    "radius": 10,
+    "font": "FiraCode Nerd Font",
+    "fontSize": 11
+  },
+
+  "panels": {
+    "taskbar": {
+      "enabled": true,
+      "position": "bottom",
+      "height": 44,
+      "opacity": 0.92,
+      "blur": false,
+      "border": true,
+      "borderSide": "top",
+      "autohide": false,
+      "layer": "top",
+      "widgets": [
+        {
+          "id": "app-menu",
+          "type": "AppMenu",
+          "side": "left",
+          "config": {
+            "icon": "",
+            "label": "Apps",
+            "showLabel": true,
+            "style": "button-rounded"
+          }
+        },
+        {
+          "id": "window-list",
+          "type": "WindowList",
+          "side": "left",
+          "fill": true,
+          "config": {
+            "maxWidth": 180,
+            "showIcons": true,
+            "showLabels": true,
+            "groupSimilar": false,
+            "buttonStyle": "compact"
+          }
+        },
+        {
+          "id": "separator-1",
+          "type": "Separator",
+          "side": "right"
+        },
+        {
+          "id": "systray",
+          "type": "SystemTray",
+          "side": "right",
+          "config": {
+            "iconSize": 18,
+            "spacing": 4
+          }
+        },
+        {
+          "id": "volume",
+          "type": "VolumeControl",
+          "side": "right",
+          "config": {
+            "icon": "󰕾",
+            "showSliderOnHover": true,
+            "scrollStep": 5
+          }
+        },
+        {
+          "id": "network",
+          "type": "NetworkStatus",
+          "side": "right",
+          "config": {
+            "showLabel": false,
+            "icons": {
+              "wifi": "󰤨",
+              "ethernet": "󰈀",
+              "disconnected": "󰤭"
+            }
+          }
+        },
+        {
+          "id": "battery",
+          "type": "BatteryIndicator",
+          "side": "right",
+          "config": {
+            "showPercentage": true,
+            "icons": {
+              "charging": "󰂄",
+              "full": "󰁹",
+              "high": "󰂀",
+              "medium": "󰁾",
+              "low": "󰁺",
+              "critical": "󰁺"
+            },
+            "criticalThreshold": 10,
+            "lowThreshold": 20
+          }
+        },
+        {
+          "id": "clock",
+          "type": "Clock",
+          "side": "right",
+          "config": {
+            "format": "HH:mm",
+            "dateFormat": "ddd, DD MMM",
+            "showDate": false,
+            "showDateOnHover": true,
+            "style": "digital"
+          }
+        }
+      ]
+    },
+
+    "topbar": {
+      "enabled": true,
+      "position": "top",
+      "height": 28,
+      "opacity": 0.88,
+      "blur": false,
+      "border": true,
+      "borderSide": "bottom",
+      "autohide": false,
+      "layer": "top",
+      "widgets": [
+        {
+          "id": "workspace-pager",
+          "type": "WorkspacePager",
+          "side": "left",
+          "config": {
+            "showNumbers": true,
+            "showNames": false,
+            "iconSize": 8,
+            "style": "dots",
+            "maxWorkspaces": 9
+          }
+        },
+        {
+          "id": "active-window-title",
+          "type": "ActiveWindowTitle",
+          "side": "left",
+          "fill": true,
+          "config": {
+            "maxLength": 60,
+            "showIcon": true,
+            "iconSize": 16
+          }
+        },
+        {
+          "id": "notification-bell",
+          "type": "NotificationBell",
+          "side": "right",
+          "config": {
+            "icon": "󰂚",
+            "iconMuted": "󰂛",
+            "showCount": true
+          }
+        },
+        {
+          "id": "clock-topbar",
+          "type": "Clock",
+          "side": "right",
+          "config": {
+            "format": "dddd, DD MMMM · HH:mm:ss",
+            "showDate": true,
+            "style": "minimal"
+          }
+        }
+      ]
+    },
+
+    "dock": {
+      "enabled": false,
+      "position": "bottom",
+      "height": 56,
+      "offset": 8,
+      "opacity": 0.90,
+      "blur": false,
+      "autohide": true,
+      "layer": "top",
+      "apps": [
+        { "name": "Thunar",    "exec": "thunar",    "icon": "system-file-manager" },
+        { "name": "Terminal",  "exec": "alacritty",  "icon": "terminal" },
+        { "name": "Firefox",   "exec": "firefox",    "icon": "firefox" },
+        { "name": "Kate",      "exec": "kate",       "icon": "kate" },
+        { "name": "Settings",  "exec": "apollo-control", "icon": "preferences-system" }
+      ]
+    },
+
+    "sidebar": {
+      "enabled": false,
+      "position": "right",
+      "width": 280,
+      "opacity": 0.92,
+      "blur": false,
+      "autohide": true,
+      "layer": "overlay",
+      "plugins": ["weather", "calendar-popup", "notes"]
+    }
+  },
+
+  "plugins": {
+    "weather": {
+      "enabled": true,
+      "provider": "openmeteo",
+      "location": "auto",
+      "units": "metric",
+      "updateInterval": 1800,
+      "showInTaskbar": false,
+      "showInSidebar": true
+    },
+    "media-player": {
+      "enabled": true,
+      "showInTaskbar": true,
+      "showInSidebar": false,
+      "backends": ["mpris"],
+      "config": {
+        "showArtist": true,
+        "maxTitleLength": 30,
+        "icons": {
+          "play": "󰐊",
+          "pause": "󰏤",
+          "prev": "󰒮",
+          "next": "󰒭"
+        }
+      }
+    },
+    "calendar-popup": {
+      "enabled": true,
+      "showInSidebar": true,
+      "startOnMonday": true
+    },
+    "cpu-graph": {
+      "enabled": false,
+      "showInTaskbar": false,
+      "showInSidebar": true,
+      "config": {
+        "updateInterval": 1000,
+        "historyLength": 60,
+        "color": "#6C8EFF"
+      }
+    },
+    "notes": {
+      "enabled": true,
+      "showInSidebar": true,
+      "storagePath": "~/.local/share/apollo-notes"
+    }
+  },
+
+  "keybinds": {
+    "toggleSidebar": "Super+S",
+    "toggleDock": "Super+D",
+    "openAppMenu": "Super+A",
+    "openLauncher": "Super+Space"
+  }
+}

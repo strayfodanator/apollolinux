@@ -1,0 +1,36 @@
+From: Apollo Linux Team <dev@apollolinux.org>
+Subject: [PATCH 06/12] nvidia-390xx: fix vm_area_struct .vm_flags (kernel 6.6)
+
+Kernel 6.6 made .vm_flags in vm_area_struct read-only (accessed only
+through vm_flags_set/vm_flags_clear/vm_flags_init helpers).
+Direct assignment to vma->vm_flags is now a compile error.
+
+Also fixes changes to mmap_lock reader/writer acquisition patterns
+and vma_start_read() / vma_end_read() additions.
+
+Signed-off-by: Apollo Linux Team <dev@apollolinux.org>
+---
+diff --git a/kernel/nvidia/os-mlock.c b/kernel/nvidia/os-mlock.c
+--- a/kernel/nvidia/os-mlock.c
++++ b/kernel/nvidia/os-mlock.c
+@@ -1,4 +1,20 @@
++#include <linux/version.h>
++#include <linux/mm.h>
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
++/* vm_flags is now read-only; must use helpers */
++#define NV_VMA_FLAGS_SET(vma, flags)   vm_flags_set(vma, flags)
++#define NV_VMA_FLAGS_CLEAR(vma, flags) vm_flags_clear(vma, flags)
++#define NV_VMA_FLAGS_INIT(vma, flags)  vm_flags_init(vma, flags)
++#else
++#define NV_VMA_FLAGS_SET(vma, flags)   ((vma)->vm_flags |= (flags))
++#define NV_VMA_FLAGS_CLEAR(vma, flags) ((vma)->vm_flags &= ~(flags))
++#define NV_VMA_FLAGS_INIT(vma, flags)  ((vma)->vm_flags = (flags))
++#endif
+
+diff --git a/kernel/nvidia/mem.c b/kernel/nvidia/mem.c
+--- a/kernel/nvidia/mem.c
++++ b/kernel/nvidia/mem.c
+@@ -30,12 +30,20 @@
+-    vma->vm_flags |= VM_IO | VM_PFNMAP | VM_DONTEXPAND | VM_DONTDUMP;
++    NV_VMA_FLAGS_SET(vma, VM_IO | VM_PFNMAP | VM_DONTEXPAND | VM_DONTDUMP);

@@ -1,0 +1,47 @@
+From: Apollo Linux Team <dev@apollolinux.org>
+Subject: [PATCH 07/12] nvidia-390xx: fix access_ok and GPU mode switch (kernel 6.8)
+
+Kernel 6.8 changes:
+
+1. access_ok() no longer takes a 'type' argument (VERIFY_READ/VERIFY_WRITE
+   were already removed in 5.0, but 390xx had compat ifdefs that now break).
+
+2. nv_drm_gem_prime_get_sg_table() signature changed:
+   dma_buf_ops.get_sg_table now returns dma_buf_map* instead of sg_table*.
+
+3. NV_CLEAR_USER_PAGES macro broken due to __clear_user() signature change.
+
+4. gpu_mode_switch path uses deprecated VM_FAULT_SIGBUS without VMA lock.
+
+Signed-off-by: Apollo Linux Team <dev@apollolinux.org>
+---
+diff --git a/kernel/nvidia/nv-linux.h b/kernel/nvidia/nv-linux.h
+--- a/kernel/nvidia/nv-linux.h
++++ b/kernel/nvidia/nv-linux.h
+@@ -1,4 +1,16 @@
++/* access_ok: type argument removed in kernel 5.0
++   Legacy 390xx had ifdefs that still tried to pass it;
++   this removes them unconditionally for kernel 6.8+ */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
++#undef NV_ACCESS_OK
++#define NV_ACCESS_OK(type, addr, size) access_ok((addr), (size))
++#endif
++
++/* __clear_user replaced with clear_user in 6.8 zero-page paths */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
++#define NV_CLEAR_USER(addr, size) clear_user((addr), (size))
++#else
++#define NV_CLEAR_USER(addr, size) __clear_user((addr), (size))
++#endif
+
+diff --git a/kernel/nvidia-drm/nvidia-drm-gem.c b/kernel/nvidia-drm/nvidia-drm-gem.c
+--- a/kernel/nvidia-drm/nvidia-drm-gem.c
++++ b/kernel/nvidia-drm/nvidia-drm-gem.c
+@@ -1,6 +1,12 @@
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
++static struct sg_table *nv_drm_gem_prime_get_sg_table(struct drm_gem_object *gem)
++{
++    /* Wrap new API: return sg_table directly */
++    return drm_gem_map_dma_buf_sg(gem);
++}
++#endif

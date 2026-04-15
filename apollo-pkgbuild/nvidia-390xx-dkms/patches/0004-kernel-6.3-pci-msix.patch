@@ -1,0 +1,38 @@
+From: Apollo Linux Team <dev@apollolinux.org>
+Subject: [PATCH 04/12] nvidia-390xx: fix pci_enable_msix_range removal (kernel 6.3)
+
+Kernel 6.3 renamed pci_enable_msix() → pci_alloc_irq_vectors() and
+removed the old pci_enable_msix_range() wrapper entirely.
+The nvidia-390xx driver uses the old API directly.
+
+Also handles the removal of pci_find_capability() in favour of
+pci_read_config_*(pdev, PCI_CAP_ID_*) patterns.
+
+Signed-off-by: Apollo Linux Team <dev@apollolinux.org>
+---
+diff --git a/kernel/nvidia/nv-pci.c b/kernel/nvidia/nv-pci.c
+--- a/kernel/nvidia/nv-pci.c
++++ b/kernel/nvidia/nv-pci.c
+@@ -1,4 +1,22 @@
++#include <linux/version.h>
++#include <linux/pci.h>
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
++/* pci_enable_msix_range removed — use pci_alloc_irq_vectors */
++static inline int nv_pci_enable_msix_range(struct pci_dev *dev,
++                                            struct msix_entry *entries,
++                                            int minvec, int maxvec)
++{
++    int nvec = pci_alloc_irq_vectors(dev, minvec, maxvec,
++                                      PCI_IRQ_MSIX | PCI_IRQ_AFFINITY);
++    if (nvec < 0)
++        return nvec;
++    if (entries) {
++        int i;
++        for (i = 0; i < nvec; i++)
++            entries[i].vector = pci_irq_vector(dev, i);
++    }
++    return nvec;
++}
++#define pci_enable_msix_range nv_pci_enable_msix_range
++#endif

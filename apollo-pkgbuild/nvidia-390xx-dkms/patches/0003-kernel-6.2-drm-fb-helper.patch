@@ -1,0 +1,49 @@
+From: Apollo Linux Team <dev@apollolinux.org>
+Subject: [PATCH 03/12] nvidia-390xx: fix drm_fb_helper API removal (kernel 6.2)
+
+Kernel 6.2 removed several drm_fb_helper_* functions:
+- drm_fb_helper_setcmap()
+- drm_fb_helper_ioctl()
+- The fb_info->fbdefio pattern changed
+
+Also removes the dependency on CONFIG_FB and CONFIG_FB_CFB_FILLRECT
+which were removed/restructured.
+
+Reference: https://lore.kernel.org/all/20221211114112.96900-2-simona@ffwll.ch/
+
+Signed-off-by: Apollo Linux Team <dev@apollolinux.org>
+---
+diff --git a/kernel/nvidia-drm/nvidia-drm-fb.c b/kernel/nvidia-drm/nvidia-drm-fb.c
+--- a/kernel/nvidia-drm/nvidia-drm-fb.c
++++ b/kernel/nvidia-drm/nvidia-drm-fb.c
+@@ -1,4 +1,14 @@
++#include <linux/version.h>
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
++/* drm_fb_helper_setcmap removed — provide no-op compat */
++static int nv_drm_fb_setcmap(struct fb_cmap *cmap, struct fb_info *info)
++{
++    return 0;
++}
++#define drm_fb_helper_setcmap nv_drm_fb_setcmap
++#endif
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
++/* drm_fb_helper_ioctl removed — provide passthrough */
++static int nv_drm_fb_ioctl(struct fb_info *info, unsigned int cmd,
++                            unsigned long arg)
++{
++    return -ENOTTY;
++}
++#define drm_fb_helper_ioctl nv_drm_fb_ioctl
++#endif
+
+diff --git a/kernel/conftest.sh b/kernel/conftest.sh
+--- a/kernel/conftest.sh
++++ b/kernel/conftest.sh
+@@ -1,3 +1,10 @@
++# Apollo: kernel 6.2 compatibility
++if [ "$KERNEL_VERSION" -ge "60200" ]; then
++    NV_CONFTEST_FUNCTION_COMPILE_TESTS="${NV_CONFTEST_FUNCTION_COMPILE_TESTS} drm_fb_helper_setcmap"
++    echo "#define NV_DRM_FB_HELPER_SETCMAP_REMOVED 1" >> conftest.h
++fi
