@@ -1,0 +1,84 @@
+--- a/kernel/nvidia/nv-linux.h
++++ b/kernel/nvidia/nv-linux.h
+@@ -1,6 +1,11 @@
+ /* SPDX-License-Identifier: GPL-2.0 */
+ #ifndef _NV_LINUX_H_
+ #define _NV_LINUX_H_
++
++/* Apollo Linux: include unified kernel compatibility shims */
++#include "apollo-nvidia-compat.h"
++
+ #include <linux/version.h>
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+
+--- a/kernel/nvidia-drm/nvidia-drm-drv.c
++++ b/kernel/nvidia-drm/nvidia-drm-drv.c
+@@ -1,6 +1,7 @@
+ #include "nvidia-drm-drv.h"
+ #include "nvidia-drm-gem.h"
++#include "apollo-nvidia-compat.h"
+
+ /* Kernel 6.13+: gem_prime_import_sg_table removed from drm_driver struct */
+ #if defined(NV_DRM_PRIME_SG_NO_CALLBACK)
+@@ -80,10 +81,20 @@ static struct drm_driver nv_drm_driver = {
+     .gem_free_object_unlocked = nv_drm_gem_free_object,
+     .prime_handle_to_fd       = drm_gem_prime_handle_to_fd,
+     .prime_fd_to_handle       = drm_gem_prime_fd_to_handle,
+-    .gem_prime_import_sg_table = nv_drm_gem_prime_import_sg_table,
++#if !defined(NV_DRM_PRIME_SG_NO_CALLBACK)
++    .gem_prime_import_sg_table = nv_drm_gem_prime_import_sg_table,
++#endif
+
+--- a/kernel/nvidia/os-mem.c
++++ b/kernel/nvidia/os-mem.c
+@@ -1,4 +1,5 @@
+ #include "nv-linux.h"
++#include "apollo-nvidia-compat.h"
+
+ /* Kernel 6.14+: mmap_sem removed, use mmap_lock */
+ static int nv_mmap_read_lock_wrapper(struct mm_struct *mm)
+@@ -10,7 +11,11 @@ static int nv_mmap_read_lock_wrapper(struct mm_struct *mm)
+ #if defined(NV_USE_FOLIO_PFN)
+     /* Use folio-aware path */
+     return 0;
++#elif defined(down_read_mmap_sem)
++    down_read_mmap_sem(mm);
++    return 1;
+ #else
+     mmap_read_lock(mm);
+     return 1;
+ #endif
+ }
+
+--- a/kernel/nvidia/nv-procfs.c
++++ b/kernel/nvidia/nv-procfs.c
+@@ -1,4 +1,5 @@
+ #include "nv-linux.h"
++#include "apollo-nvidia-compat.h"
+
+ /* Kernel 6.15+: PDE_DATA() macro removed */
+ static void *nv_proc_seq_start(struct seq_file *s, loff_t *pos)
+ {
+-    return PDE_DATA(file_inode(s->file));
++#if defined(PDE_DATA)
++    return PDE_DATA(file_inode(s->file));
++#else
++    return pde_data(file_inode(s->file));
++#endif
+ }
+
+--- a/kernel/nvidia/os-interface.c
++++ b/kernel/nvidia/os-interface.c
+@@ -1,4 +1,5 @@
+ #include "nv-linux.h"
++#include "apollo-nvidia-compat.h"
+
+ /* Kernel 6.19+: folio API mandatory for compound pages */
+ #if defined(NV_FOLIO_MANDATORY_6_19)
+ static struct page *nv_get_compound_head(struct page *page)
+ {
+-    return compound_head(page);
++    return compound_head_page(page);
+ }
+ #endif

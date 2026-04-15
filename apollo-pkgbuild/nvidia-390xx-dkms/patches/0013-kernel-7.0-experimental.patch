@@ -1,0 +1,71 @@
+--- a/kernel/nvidia/os-workqueue.c
++++ b/kernel/nvidia/os-workqueue.c
+@@ -1,6 +1,7 @@
+ /*
+  * Apollo Linux — nvidia-390xx kernel 7.0 compatibility shim
+  * Status: EXPERIMENTAL — kernel 7.0 released 2026-04-12
++ * Track upstream: https://bbs.archlinux.org/viewtopic.php?pid=1946926
+  */
+ #include "nv-linux.h"
+ #include "apollo-nvidia-compat.h"
+@@ -10,12 +11,30 @@
+  * Kernel 7.0: destroy_workqueue() → queue_destroy_workqueue()
+  * Ref: torvalds/linux commit (workqueue: rename destroy_workqueue)
+  */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+
++#include <linux/workqueue.h>
+
+-static void nv_destroy_workqueue(struct workqueue_struct *wq)
++static inline void nv_destroy_workqueue(struct workqueue_struct *wq)
+ {
++#if defined(queue_destroy_workqueue)
++    queue_destroy_workqueue(wq);
++#else
++    /* Fallback for RC kernels that haven't landed the rename yet */
++    if (wq)
++        destroy_workqueue(wq);
++#endif
++}
+
+--- a/kernel/nvidia-drm/nvidia-drm-gem.c
++++ b/kernel/nvidia-drm/nvidia-drm-gem.c
+@@ -1,6 +1,7 @@
+ #include "nvidia-drm-gem.h"
++#include "apollo-nvidia-compat.h"
+
+ /*
+  * Kernel 7.0: drm_driver struct field cleanup phase 2.
+  * gem_prime_get_sg_table function pointer may be removed from struct.
+  * Use drm_gem_map_dma_buf() helper directly.
++ * NOTE: This path is speculative — refer to kernel 7.0 changelogs for
++ * the final API. Patch will be updated when confirmed.
+  */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0) && \
++    !defined(NV_DRM_GEM_HAS_PRIME_GET_SG_TABLE)
++static struct sg_table *
++nv_drm_gem_prime_get_sg_table_compat(struct drm_gem_object *gem_obj)
++{
++    /* Forward to the actual implementation with updated signature */
++    return nv_drm_gem_map_dma_buf(gem_obj, NULL);
++}
++#endif
+
+--- a/kernel/nvidia/nv-iommu.c
++++ b/kernel/nvidia/nv-iommu.c
+@@ -1,6 +1,18 @@
+ #include "nv-linux.h"
++#include "apollo-nvidia-compat.h"
+
++/* Kernel 7.0: IOMMU domain type consolidation
++ * IOMMU_DOMAIN_BLOCKED added as explicit type.
++ * DMA domain alloc signature may change.
++ * TODO: Verify with final 7.0 release — currently best-effort.
++ */
++#if defined(NV_IOMMU_DOMAIN_COMPAT_7_0)
++#  ifndef IOMMU_DOMAIN_BLOCKED
++#    define IOMMU_DOMAIN_BLOCKED 0
++#  endif
++#endif
+
++#endif /* LINUX_VERSION_CODE >= 7.0 */

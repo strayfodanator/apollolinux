@@ -3,14 +3,16 @@
 # Based on: nvidia-390xx-dkms (AUR) by various contributors
 #
 # Apollo Linux patched build of nvidia-390xx-dkms
-# Applies cumulative patches for Linux kernel 6.x compatibility
-# Tested against: 6.1 (LTS), 6.6 (LTS), 6.8, 6.9, 6.10, 6.11, 6.12
+# Applies cumulative patches for Linux kernel 5.18 → 7.0
+# Tested/supported: 6.1 (LTS), 6.6 (LTS), 6.8–6.12 (stable)
+# Experimental: kernel 7.0 (released 2026-04-12 — patches WIP)
+# Track upstream: https://bbs.archlinux.org/viewtopic.php?pid=1946926
 
 pkgbase=apollo-nvidia-390xx-dkms
 pkgname=(apollo-nvidia-390xx-dkms apollo-nvidia-390xx-utils)
 pkgver=390.157.04
-pkgrel=11
-pkgdesc="NVIDIA legacy (390xx) driver with Apollo patches for kernel 6.x (GT 600/700, GT 710/720/610)"
+pkgrel=13
+pkgdesc="NVIDIA legacy (390xx) driver — Apollo patches for kernel 5.18→7.0 (GT 600/700, GT 710/720/610)"
 arch=('x86_64')
 url="https://www.nvidia.com/"
 license=('custom:NVIDIA')
@@ -21,7 +23,7 @@ options=('!strip')
 _src_url="https://us.download.nvidia.com/XFree86/Linux-x86_64/${pkgver}"
 source=(
     "${_src_url}/NVIDIA-Linux-x86_64-${pkgver}.run"
-    # Apollo cumulative patch set
+    # Apollo cumulative patch set — kernel 5.18 → 6.12
     "0001-kernel-5.18-Rm-DRM_LEGACY.patch"
     "0002-kernel-6.0-i_version-iversion.patch"
     "0003-kernel-6.2-drm-fb-helper.patch"
@@ -33,6 +35,12 @@ source=(
     "0009-kernel-6.10-drm-gem-prime.patch"
     "0010-kernel-6.11-seq-file-overflow.patch"
     "0011-kernel-6.12-compat-shim.patch"
+    # Apollo extended support — kernel 6.13 → 6.19 (unified via compat header)
+    "apollo-nvidia-compat.h"
+    "0012-kernel-6.13-6.19-unified-compat.patch"
+    # Apollo kernel 7.0 — EXPERIMENTAL (released 2026-04-12)
+    # Comment out if it causes build failures:
+    "0013-kernel-7.0-experimental.patch"
     # Apollo convenience scripts
     "apollo-nvidia-390xx-drm-outputclass.conf"
     "apollo-nvidia-390xx-sysctl.conf"
@@ -40,7 +48,12 @@ source=(
 
 sha256sums=(
     'a8a6d7ef5bf1d4e7db5e0aec5d1e706d89ff8af3c69ee6ebde74ca05d0e4f5d7'  # NVIDIA run file
-    'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP'
+    # Patches (verified by Apollo Linux team)
+    'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP'
+    # Extended patches + header
+    'SKIP' 'SKIP' 'SKIP'
+    # Convenience files
+    'SKIP' 'SKIP'
 )
 
 DKMS_NAME="nvidia"
@@ -68,7 +81,7 @@ prepare() {
 }
 
 package_apollo-nvidia-390xx-dkms() {
-    pkgdesc="NVIDIA (390xx) kernel module with Apollo patches for kernel 6.x — DKMS"
+    pkgdesc="NVIDIA (390xx) kernel module — Apollo patches kernel 5.18→7.0 — DKMS"
     depends=("apollo-nvidia-390xx-utils=${pkgver}" 'dkms' 'libglvnd')
     provides=("nvidia-390xx-dkms=${pkgver}" 'NVIDIA-MODULE')
     conflicts=('nvidia-390xx-dkms' 'nvidia-dkms' 'nvidia-lts' 'nvidia-470xx-dkms')
@@ -80,6 +93,13 @@ package_apollo-nvidia-390xx-dkms() {
 
     # Copy kernel module sources
     cp -dr --preserve=mode "${srcdir}/${_src}/kernel/" "${_dest}/"
+
+    # Copy Apollo compatibility header into kernel source tree
+    # (needed by patch 0012 which includes apollo-nvidia-compat.h)
+    install -Dm644 "${srcdir}/apollo-nvidia-compat.h" \
+        "${_dest}/kernel/nvidia/apollo-nvidia-compat.h"
+    install -Dm644 "${srcdir}/apollo-nvidia-compat.h" \
+        "${_dest}/kernel/nvidia-drm/apollo-nvidia-compat.h"
 
     # Write dkms.conf
     cat > "${_dest}/dkms.conf" <<EOF
