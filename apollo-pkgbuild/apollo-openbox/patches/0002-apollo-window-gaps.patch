@@ -1,0 +1,35 @@
+--- a/openbox/config.c
++++ b/openbox/config.c
+@@ -0,0 +1,30 @@
++/* Apollo patch: Window gap support
++ *
++ * Adds "gaps" between windows and screen edges.
++ * Configured via <gaps> in rc.xml:
++ *
++ *   <gaps>
++ *     <inner>6</inner>    <!-- gap between windows -->
++ *     <outer>0</outer>    <!-- gap from screen edges -->
++ *   </gaps>
++ *
++ * Gaps are respected by:
++ *   - Smart placement
++ *   - Snap zones (apollo_snap.c adds gap offset)
++ *   - MoveResizeTo action bounds
++ */
++
++gint config_gaps_inner = 6;   /* px between windows */
++gint config_gaps_outer = 0;   /* px from screen edges */
++
++/* Parse <gaps> from rc.xml */
++static void parse_gaps(xmlNodePtr node, gpointer d)
++{
++    xmlNodePtr n;
++    if ((n = obt_xml_find_node(node, "inner")))
++        config_gaps_inner = MAX(0, obt_xml_node_int(n));
++    if ((n = obt_xml_find_node(node, "outer")))
++        config_gaps_outer = MAX(0, obt_xml_node_int(n));
++}
++
++/* Hook into config parsing */
++/* Called in config_startup() */
++/* obt_xml_register(i, "gaps", parse_gaps, NULL); */

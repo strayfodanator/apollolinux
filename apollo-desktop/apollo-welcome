@@ -1,0 +1,254 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Apollo Linux — Apollo Welcome
+First-boot welcome application using GTK4.
+
+Shows:
+  - Welcome message with detected desktop mode
+  - Quick start guide
+  - Links to docs, GitHub, community
+  - Hardware detection summary
+  - Option to open Apollo Control Center
+"""
+
+import os
+import subprocess
+import sys
+
+try:
+    import gi
+    gi.require_version("Gtk", "4.0")
+    gi.require_version("Adw", "1")
+    from gi.repository import Gtk, Adw, GLib, Gdk, Pango
+except ImportError:
+    # Fallback: use zenity for basic dialog
+    subprocess.run([
+        "zenity", "--info",
+        "--title=Apollo Linux",
+        "--text=Bem-vindo ao Apollo Linux!\n\nVisite: https://apollolinux.org",
+        "--width=400"
+    ])
+    sys.exit(0)
+
+
+# ── Hardware info (from detect-hardware.sh) ──────────────────────────────────
+def get_hw_info():
+    """Read hardware detection output from the system."""
+    script = "/etc/apollo/detect-hardware.sh"
+    info = {
+        "GPU_MODEL": "Unknown GPU",
+        "GPU_DRIVER": "unknown",
+        "RAM_MB": "0",
+        "CPU_SCORE": "unknown",
+        "DESKTOP_DEFAULT": "apollo-desktop",
+    }
+    try:
+        result = subprocess.run(
+            ["bash", script], capture_output=True, text=True, timeout=10
+        )
+        for line in result.stdout.splitlines():
+            if "=" in line:
+                k, _, v = line.partition("=")
+                info[k.strip()] = v.strip()
+    except Exception:
+        pass
+    return info
+
+
+# ── CSS ──────────────────────────────────────────────────────────────────────
+CSS = b"""
+window {
+    background-color: #0f1117;
+    color: #E8EAF0;
+}
+.welcome-header {
+    font-size: 28px;
+    font-weight: bold;
+    color: #6C8EFF;
+}
+.welcome-sub {
+    font-size: 14px;
+    color: #8890A4;
+    margin-bottom: 16px;
+}
+.hw-card {
+    background-color: #1a1d27;
+    border: 1px solid #2e3248;
+    border-radius: 10px;
+    padding: 14px;
+    margin: 4px 0;
+}
+.hw-label {
+    font-weight: bold;
+    color: #E8EAF0;
+    font-size: 12px;
+}
+.hw-value {
+    color: #8890A4;
+    font-size: 11px;
+}
+.accent { color: #6C8EFF; }
+.btn-primary {
+    background-color: #6C8EFF;
+    color: white;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: bold;
+}
+.btn-secondary {
+    background-color: #252836;
+    color: #E8EAF0;
+    border-radius: 8px;
+    padding: 8px 16px;
+}
+"""
+
+
+class ApolloWelcome(Adw.Application):
+
+    def __init__(self):
+        super().__init__(application_id="org.apollolinux.Welcome")
+        self.connect("activate", self.on_activate)
+
+    def on_activate(self, app):
+        # Apply CSS
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS)
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
+
+        hw = get_hw_info()
+        desktop = hw.get("DESKTOP_DEFAULT", "apollo-desktop")
+        desktop_name = "Apollo Desktop (Openbox)" if desktop == "apollo-desktop" else "Hyprland (Wayland)"
+        driver = hw.get("GPU_DRIVER", "unknown")
+        is_legacy = "390xx" in driver or "470xx" in driver
+
+        # ── Window ────────────────────────────────────────────────
+        win = Adw.ApplicationWindow(application=app)
+        win.set_title("Welcome to Apollo Linux")
+        win.set_default_size(640, 520)
+        win.set_resizable(False)
+
+        # ── Root layout ───────────────────────────────────────────
+        root_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+
+        # ── Header graphic strip ──────────────────────────────────
+        header = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        header.set_margin_top(32)
+        header.set_margin_bottom(20)
+        header.set_margin_start(48)
+        header.set_margin_end(48)
+        header.set_halign(Gtk.Align.CENTER)
+
+        # Logo text (replace with actual SVG when available)
+        logo = Gtk.Label(label="🚀 Apollo Linux")
+        logo.add_css_class("welcome-header")
+        logo.set_halign(Gtk.Align.CENTER)
+
+        sub = Gtk.Label(label="Fast. Beautiful. Compatible.")
+        sub.add_css_class("welcome-sub")
+        sub.set_halign(Gtk.Align.CENTER)
+
+        mode_badge = Gtk.Label(label=f"✦ {desktop_name} was installed for your hardware")
+        mode_badge.set_markup(
+            f"<span foreground='#6C8EFF' size='small'>✦ <b>{desktop_name}</b> was installed for your hardware</span>"
+        )
+        mode_badge.set_halign(Gtk.Align.CENTER)
+
+        header.append(logo)
+        header.append(sub)
+        header.append(mode_badge)
+        root_box.append(header)
+
+        # ── Hardware summary ──────────────────────────────────────
+        hw_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        hw_section.set_margin_start(32)
+        hw_section.set_margin_end(32)
+        hw_section.set_margin_bottom(16)
+
+        hw_items = [
+            ("GPU",    hw.get("GPU_MODEL", "Unknown"),  "" if is_legacy else ""),
+            ("Driver", hw.get("GPU_DRIVER", "unknown"), "󰭻"),
+            ("RAM",    f"{int(hw.get('RAM_MB', 0)) // 1024} GB", ""),
+            ("Mode",   desktop_name, "󰟀"),
+        ]
+
+        for label, value, icon in hw_items:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+            row.add_css_class("hw-card")
+
+            icon_lbl = Gtk.Label(label=icon)
+            icon_lbl.set_markup(f"<span foreground='#6C8EFF' size='large'>{icon}</span>")
+            icon_lbl.set_width_chars(2)
+            icon_lbl.set_xalign(0.5)
+
+            text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
+            k = Gtk.Label(label=label)
+            k.add_css_class("hw-label")
+            k.set_xalign(0)
+            v = Gtk.Label(label=value)
+            v.add_css_class("hw-value")
+            v.set_xalign(0)
+            v.set_ellipsize(Pango.EllipsizeMode.END)
+            text_box.append(k)
+            text_box.append(v)
+
+            row.append(icon_lbl)
+            row.append(text_box)
+            hw_section.append(row)
+
+        if is_legacy:
+            legacy_note = Gtk.Label()
+            legacy_note.set_markup(
+                "<span foreground='#FBBF24' size='small'>󰀦 NVIDIA legacy GPU detected. "
+                "Driver apollo-nvidia-" + ("390xx" if "390xx" in driver else "470xx") + "-dkms installed.</span>"
+            )
+            legacy_note.set_xalign(0)
+            legacy_note.set_margin_top(6)
+            hw_section.append(legacy_note)
+
+        root_box.append(hw_section)
+
+        # ── Action buttons ────────────────────────────────────────
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row.set_halign(Gtk.Align.CENTER)
+        btn_row.set_margin_bottom(32)
+        btn_row.set_margin_start(32)
+        btn_row.set_margin_end(32)
+
+        def make_btn(label, css_class, callback):
+            btn = Gtk.Button(label=label)
+            btn.add_css_class(css_class)
+            btn.connect("clicked", callback)
+            return btn
+
+        def open_control(_):
+            subprocess.Popen(["apollo-control"])
+
+        def open_docs(_):
+            subprocess.Popen(["xdg-open", "https://apollolinux.org/docs"])
+
+        def open_terminal(_):
+            subprocess.Popen(["alacritty"])
+
+        def close_app(_):
+            win.close()
+
+        btn_row.append(make_btn("⚙  Control Center", "btn-primary", open_control))
+        btn_row.append(make_btn("󰋗  Docs",          "btn-secondary", open_docs))
+        btn_row.append(make_btn("  Terminal",       "btn-secondary", open_terminal))
+        btn_row.append(make_btn("Close",             "btn-secondary", close_app))
+
+        root_box.append(btn_row)
+
+        win.set_content(root_box)
+        win.present()
+
+
+if __name__ == "__main__":
+    app = ApolloWelcome()
+    app.run(sys.argv)

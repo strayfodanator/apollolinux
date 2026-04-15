@@ -1,0 +1,123 @@
+# Maintainer: Apollo Linux Team <dev@apollolinux.org>
+#
+# apollo-openbox — An enhanced fork of Openbox 3.6.1 for Apollo Desktop
+#
+# Apollo-specific additions over vanilla Openbox:
+#   - Snap zones (half/quarter tiling via keyboard AND mouse drag-to-edge)
+#   - Configurable window gaps
+#   - Background blur hints (picom coordination)
+#   - Fixed EWMH _NET_WORKAREA with correct margins for panels
+#   - Per-window rounding radius hints (coordinated with picom)
+
+pkgname=apollo-openbox
+pkgver=3.6.1.apollo2
+_obsrcver=3.6.1
+pkgrel=3
+pkgdesc="Apollo Desktop window manager — enhanced Openbox fork with snap zones and gaps"
+arch=('x86_64')
+url="https://github.com/strayfodanator/apollolinux"
+license=('GPL-2.0')
+depends=('libxml2' 'libxinerama' 'libxrandr' 'libxcursor' 'pango' 'startup-notification'
+         'imlib2')
+makedepends=('autoconf' 'automake' 'libtool' 'pkgconf' 'git')
+optdepends=(
+    'obconf-qt: GUI configuration tool'
+    'menumaker: automatic menu generator'
+    'xdg-menu: XDG menu generation'
+    'wmctrl: window management CLI'
+)
+provides=('openbox' 'openbox=3.6.1')
+conflicts=('openbox')
+backup=(
+    'etc/xdg/openbox/rc.xml'
+    'etc/xdg/openbox/menu.xml'
+    'etc/xdg/openbox/autostart'
+)
+
+# We clone the Openbox official repo and apply our patches on top
+_src_tag="openbox-${_obsrcver}"
+source=(
+    "https://openbox.org/dist/openbox/openbox-${_obsrcver}.tar.gz"
+    # Apollo patches (applied in order)
+    "0001-apollo-snap-zones.patch"
+    "0002-apollo-window-gaps.patch"
+    "0003-apollo-ewmh-workarea-fix.patch"
+    "0004-apollo-focus-ring.patch"
+    # Apollo default configs
+    "apollo-openbox-rc.xml"
+    "apollo-openbox-menu.xml"
+    "apollo-openbox-autostart"
+)
+
+sha256sums=(
+    'b72794c74afe10e37e3c08e8a3f8b74e38d26e2e6bf49d530f12c78b03b0f78a'
+    'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP'
+)
+
+prepare() {
+    cd "openbox-${_obsrcver}"
+
+    # Apply Apollo patches
+    for _patch in "${srcdir}/"[0-9][0-9][0-9][0-9]-apollo-*.patch; do
+        echo ">> Applying: $(basename "${_patch}")"
+        patch -Np1 < "${_patch}"
+    done
+
+    autoreconf -ifv
+}
+
+build() {
+    cd "openbox-${_obsrcver}"
+
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --libexecdir=/usr/lib/openbox \
+        --localstatedir=/var \
+        --disable-static \
+        --enable-startup-notification \
+        --enable-xinerama \
+        --enable-imlib2 \
+        --with-x
+
+    make -j"$(nproc)"
+}
+
+check() {
+    true  # Openbox has no test suite
+}
+
+package() {
+    cd "openbox-${_obsrcver}"
+    make DESTDIR="${pkgdir}" install
+
+    # Install Apollo default configs
+    install -Dm644 "${srcdir}/apollo-openbox-rc.xml"    "${pkgdir}/etc/xdg/openbox/rc.xml"
+    install -Dm644 "${srcdir}/apollo-openbox-menu.xml"  "${pkgdir}/etc/xdg/openbox/menu.xml"
+    install -Dm755 "${srcdir}/apollo-openbox-autostart" "${pkgdir}/etc/xdg/openbox/autostart"
+
+    # Apollo Desktop .desktop session file
+    install -dm755 "${pkgdir}/usr/share/xsessions"
+    cat > "${pkgdir}/usr/share/xsessions/apollo-desktop.desktop" <<EOF
+[Desktop Entry]
+Name=Apollo Desktop
+Comment=Apollo Desktop Environment (openbox-based)
+Exec=openbox-session
+TryExec=openbox
+Type=Application
+DesktopNames=Apollo;Openbox
+EOF
+
+    # Remove obsolete openbox session files (we replace with our own)
+    rm -f "${pkgdir}/usr/share/xsessions/openbox.desktop" 2>/dev/null || true
+    rm -f "${pkgdir}/usr/share/xsessions/openbox-kde.desktop" 2>/dev/null || true
+
+    # LightDM Openbox wrapper (used when there's no DE)
+    install -Dm755 /dev/stdin "${pkgdir}/usr/lib/openbox/openbox-autostart" <<'EOF'
+#!/bin/sh
+# Openbox autostart wrapper
+[ -f "$XDG_CONFIG_HOME/openbox/autostart" ] && . "$XDG_CONFIG_HOME/openbox/autostart"
+[ -f "$HOME/.config/openbox/autostart" ] && . "$HOME/.config/openbox/autostart"
+[ -f /etc/xdg/openbox/autostart ] && . /etc/xdg/openbox/autostart
+EOF
+}

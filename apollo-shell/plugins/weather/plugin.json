@@ -1,0 +1,16 @@
+{
+  "name": "weather",
+  "version": "1.0.0",
+  "description": "Current weather widget using Open-Meteo (no API key needed)",
+  "author": "Apollo Linux Team",
+  "license": "MIT",
+  "main": "Weather.qml",
+  "icon": "󰖙",
+  "category": "information",
+  "panels": ["sidebar", "taskbar"],
+  "dependencies": ["curl"],
+  "settings": {
+    "units": { "type": "select", "options": ["metric", "imperial"], "default": "metric" },
+    "location": { "type": "string", "default": "auto", "description": "City name or 'auto'" }
+  }
+}

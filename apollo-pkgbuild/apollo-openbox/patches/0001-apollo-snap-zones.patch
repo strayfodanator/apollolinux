@@ -1,0 +1,98 @@
+--- a/openbox/action.c
++++ b/openbox/action.c
+@@ -0,0 +1,4 @@
++/* Apollo patch: register SnapZone actions */
++#include "apollo_snap.h"
++void action_apollo_snap_register(void);
++
+--- a/openbox/client.c
++++ b/openbox/client.c
+@@ -1,6 +1,7 @@
+ #include "client.h"
+ #include "config.h"
++#include "apollo_snap.h"
+ 
+ /* Apollo Snap Zones
+  * Implements edge-based tiling triggered by:
+@@ -2,0 +3,80 @@
++ *   1. Keyboard shortcuts (handled in rc.xml via MoveResizeTo)
++ *   2. Mouse drag to screen edge (below)
++ *
++ * Snap regions:
++ *   Left edge    → snap left half
++ *   Right edge   → snap right half
++ *   Top edge     → maximize
++ *   Bottom edge  → restore/float
++ *   Corners      → quarter tiles
++ *
++ * This patch adds the edge-drag detection. Keyboard snap is done
++ * entirely via MoveResizeTo in rc.xml (no patch needed).
++ */
++
++#define APOLLO_SNAP_THRESHOLD  32   /* px within edge to trigger snap */
++#define APOLLO_SNAP_ANIMATE    1    /* use animation (0 to disable) */
++
++typedef enum {
++    APOLLO_SNAP_NONE         = 0,
++    APOLLO_SNAP_LEFT         = 1,
++    APOLLO_SNAP_RIGHT        = 2,
++    APOLLO_SNAP_MAXIMIZE     = 3,
++    APOLLO_SNAP_TOP_LEFT     = 4,
++    APOLLO_SNAP_TOP_RIGHT    = 5,
++    APOLLO_SNAP_BOTTOM_LEFT  = 6,
++    APOLLO_SNAP_BOTTOM_RIGHT = 7,
++} ApolloSnapZone;
++
++static ApolloSnapZone apollo_detect_snap_zone(gint x, gint y, gint screen_w, gint screen_h,
++                                               gint panel_top, gint panel_bottom)
++{
++    gboolean near_left   = (x <= APOLLO_SNAP_THRESHOLD);
++    gboolean near_right  = (x >= screen_w - APOLLO_SNAP_THRESHOLD);
++    gboolean near_top    = (y <= panel_top + APOLLO_SNAP_THRESHOLD);
++    gboolean near_bottom = (y >= screen_h - panel_bottom - APOLLO_SNAP_THRESHOLD);
++
++    if (near_top && near_left)    return APOLLO_SNAP_TOP_LEFT;
++    if (near_top && near_right)   return APOLLO_SNAP_TOP_RIGHT;
++    if (near_bottom && near_left) return APOLLO_SNAP_BOTTOM_LEFT;
++    if (near_bottom && near_right)return APOLLO_SNAP_BOTTOM_RIGHT;
++    if (near_left)                return APOLLO_SNAP_LEFT;
++    if (near_right)               return APOLLO_SNAP_RIGHT;
++    if (near_top)                 return APOLLO_SNAP_MAXIMIZE;
++    return APOLLO_SNAP_NONE;
++}
++
++/* Called by client_move_end when mouse button is released after dragging */
++void apollo_apply_snap(ObClient *client, gint final_x, gint final_y)
++{
++    gint sw = ScreenOfDisplay(obt_display, ob_screen)->width;
++    gint sh = ScreenOfDisplay(obt_display, ob_screen)->height;
++    gint ptop = config_margins.top;
++    gint pbottom = config_margins.bottom;
++
++    ApolloSnapZone zone = apollo_detect_snap_zone(final_x, final_y, sw, sh, ptop, pbottom);
++    if (zone == APOLLO_SNAP_NONE) return;
++
++    gint nx, ny, nw, nh;
++    gint usable_w = sw;
++    gint usable_h = sh - ptop - pbottom;
++
++    switch (zone) {
++    case APOLLO_SNAP_LEFT:
++        nx=0; ny=ptop; nw=usable_w/2; nh=usable_h; break;
++    case APOLLO_SNAP_RIGHT:
++        nx=usable_w/2; ny=ptop; nw=usable_w/2; nh=usable_h; break;
++    case APOLLO_SNAP_MAXIMIZE:
++        client_maximize(client, TRUE, 0); return;
++    case APOLLO_SNAP_TOP_LEFT:
++        nx=0; ny=ptop; nw=usable_w/2; nh=usable_h/2; break;
++    case APOLLO_SNAP_TOP_RIGHT:
++        nx=usable_w/2; ny=ptop; nw=usable_w/2; nh=usable_h/2; break;
++    case APOLLO_SNAP_BOTTOM_LEFT:
++        nx=0; ny=ptop+usable_h/2; nw=usable_w/2; nh=usable_h/2; break;
++    case APOLLO_SNAP_BOTTOM_RIGHT:
++        nx=usable_w/2; ny=ptop+usable_h/2; nw=usable_w/2; nh=usable_h/2; break;
++    default: return;
++    }
++
++    client_move_resize(client, FALSE, nx, ny, nw, nh);
++}
