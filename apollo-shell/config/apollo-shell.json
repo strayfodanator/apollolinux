@@ -19,6 +19,14 @@
     "fontSize": 11
   },
 
+  "wallpaper": {
+    "dark":    "/usr/share/apollo/wallpapers/apollo-dark.png",
+    "light":   "/usr/share/apollo/wallpapers/apollo-light.png",
+    "default": "/usr/share/apollo/wallpapers/apollo-dark.png"
+  },
+
+  "colorScheme": "dark",
+
   "panels": {
     "taskbar": {
       "enabled": true,
@@ -30,6 +38,11 @@
       "borderSide": "top",
       "autohide": false,
       "layer": "top",
+      "startButton": {
+        "logoPath": "/usr/share/apollo/logo.png",
+        "size": 28,
+        "tooltip": "App Menu   (Super+A)"
+      },
       "widgets": [
         {
           "id": "app-menu",

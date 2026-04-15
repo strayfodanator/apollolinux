@@ -61,20 +61,82 @@ PanelWindow {
             }
             spacing: 4
 
-            // ── LEFT: App Menu button ─────────────────────────────
-            ApolloButton {
-                id: appMenuBtn
-                icon: "󰀻"
-                label: "Apps"
-                font: theme.font ?? "FiraCode Nerd Font"
-                fontSize: (theme.fontSize ?? 11) + 1
-                accentColor: theme.accent ?? "#6C8EFF"
-                bgColor: theme.surface ?? "#1a1d27"
-                hoverColor: theme.overlay ?? "#252836"
+            // ── LEFT: Start Button (Apollo Logo) ──────────────────
+            //
+            // Uses logo.png from /usr/share/apollo/logo.png
+            // Configurable via apollo-shell.json: panels.taskbar.startButton
+            Rectangle {
+                id: startBtn
+                property var sbCfg: pCfg.startButton ?? {}
+                property int  sz:   sbCfg.size ?? 32
+                property bool hov:  false
+                property string logoPath: sbCfg.logoPath ?? "/usr/share/apollo/logo.png"
+
+                width:  sz + 12
+                height: sz + 8
                 radius: theme.radius ?? 10
-                onClicked: appMenuPopup.visible = !appMenuPopup.visible
-                Layout.preferredWidth: 80
-                Layout.fillHeight: true
+                color:  hov ? (theme.overlay ?? "#252836") : "transparent"
+                Layout.alignment: Qt.AlignVCenter
+                Layout.leftMargin: 2
+
+                Behavior on color { ColorAnimation { duration: 100 } }
+
+                // Scale effect on hover
+                scale: hov ? 1.08 : 1.0
+                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack } }
+
+                // Logo image with accent-color tint via ColorOverlay
+                Image {
+                    id: logoImg
+                    anchors.centerIn: parent
+                    width:  parent.sz
+                    height: parent.sz
+                    source: "file://" + parent.logoPath
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
+                    antialiasing: true
+                    visible: status === Image.Ready
+
+                    // Colorize the black arrow to accent color
+                    layer.enabled: true
+                    layer.effect: ColorOverlay {
+                        id: colorOverlay
+                        color: startBtn.hov
+                            ? Qt.lighter(theme.accent ?? "#6C8EFF", 1.2)
+                            : (theme.accent ?? "#6C8EFF")
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                    }
+                }
+
+                // Nerd Font fallback
+                Text {
+                    anchors.centerIn: parent
+                    text: "󰀻"
+                    font.family: theme.font ?? "FiraCode Nerd Font"
+                    font.pixelSize: 20
+                    color: startBtn.hov
+                        ? Qt.lighter(theme.accent ?? "#6C8EFF", 1.2)
+                        : (theme.accent ?? "#6C8EFF")
+                    visible: !logoImg.visible
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                }
+
+                // Tooltip
+                ToolTip {
+                    visible: startBtnMa.containsMouse
+                    delay: 400
+                    text: "App Menu   (Super+A)"
+                }
+
+                MouseArea {
+                    id: startBtnMa
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onEntered: startBtn.hov = true
+                    onExited:  startBtn.hov = false
+                    onClicked: appMenuPopup.visible = !appMenuPopup.visible
+                }
             }
 
             // Separator
