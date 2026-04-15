@@ -37,7 +37,12 @@ echo "Xft.dpi: $APOLLO_DPI" | xrdb -merge &
 # ── Set wallpaper ────────────────────────────────────────────────────────────
 WALLPAPER=$(cat "$HOME/.config/apollo/wallpaper" 2>/dev/null)
 if [ -z "$WALLPAPER" ] || [ ! -f "$WALLPAPER" ]; then
-    WALLPAPER="/usr/share/apollo/wallpapers/apollo-default.png"
+    SAVED_SCHEME=$(cat "$HOME/.config/apollo/colorscheme" 2>/dev/null || echo "dark")
+    if [ "$SAVED_SCHEME" = "light" ]; then
+        WALLPAPER="/usr/share/apollo/wallpapers/apollo-light.png"
+    else
+        WALLPAPER="/usr/share/apollo/wallpapers/apollo-dark.png"
+    fi
 fi
 feh --no-fehbg --bg-fill "$WALLPAPER" &
 

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Apollo-Light
+Comment=Apollo Linux light theme. Clean, bright, airy.
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=Apollo-Light
+MetacityTheme=Apollo-Light
+IconTheme=Papirus
+CursorTheme=Bibata-Modern-Classic
+ButtonLayout=close,minimize,maximize:

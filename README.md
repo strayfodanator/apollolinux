@@ -1,116 +1,68 @@
 # 🚀 Apollo Linux
 
-> The ZorinOS of Arch — Fast, Beautiful, and Built for Everyone.
+<p align="center">
+  <img src="apollo-themes/logo/apollo-logo.png" width="128" height="128" alt="Apollo Linux Logo">
+</p>
 
-Apollo Linux is an Arch-based distribution engineered for **maximum ease of use** without sacrificing performance or compatibility. It is one of the only distributions to offer first-class support for legacy NVIDIA hardware (390xx series, patched for kernel 6.x) alongside cutting-edge Wayland setups.
-
----
-
-## ✨ Features
-
-- **Zero manual configuration** — works out-of-the-box on hardware from a 2010 Core i5 + GT 610 to a modern Ryzen + RTX setup
-- **Smart installer (Calamares)** — detects your GPU, RAM, and Wayland compatibility, then recommends the ideal desktop environment and installs only the drivers you need
-- **Patched legacy NVIDIA drivers** — `apollo-nvidia-390xx-dkms` built and maintained for kernel 6.x (GT 610, GT 710, GTX 600/700 series)
-- **Two official desktop environments**:
-  - 🪐 **Apollo Desktop** — A heavily customized Openbox fork that looks and feels like a full DE (comparable to GNOME/KDE), yet runs on minimal hardware. Built on X11.
-  - 🌊 **Hyprland Mode** — Hyprland + AX Shell for modern hardware with full Wayland support, GPU acceleration, and fluid animations.
-- **Apollo Shell** — A QuickShell-based panel system with XFCE4-style configurability: add/remove panels, move widgets, install official plugins, all via a GUI.
-- **Official Plugin System** — Pre-installed optional plugins (weather, media player, calendar, CPU graph, notes) with a public API for community plugins.
+<p align="center">
+  <b>Fast. Beautiful. Compatible.</b><br>
+  <i>An Arch-based distribution engineered for peak performance on legacy and modern hardware.</i>
+</p>
 
 ---
 
-## 🖥️ System Requirements
+## 🌟 Vision
 
-### Apollo Desktop (Minimum)
-| Component | Minimum |
-|-----------|---------|
-| CPU | Intel Core 2 Duo / AMD Athlon II |
-| RAM | 2 GB (4 GB recommended) |
-| GPU | Any GPU with VESA/VESA fallback |
-| Storage | 15 GB |
+Apollo Linux was born from a simple philosophy: **You shouldn't have to choose between a beautiful desktop and extreme hardware optimization.**
 
-### Apollo Desktop (Recommended — Legacy NVIDIA)
-| Component | Spec |
-|-----------|------|
-| CPU | Intel Core i5 560 (Sandy Bridge) or equivalent |
-| RAM | 8 GB DDR3 |
-| GPU | NVIDIA GT 610 / GT 710 / GTX 650 (390xx driver) |
-| Storage | 30 GB SSD |
+We took the bleeding-edge foundation of Arch Linux and crafted a curated, highly polished experience on top of it. Apollo is designed to run flawlessly on everything from a 10-year-old NVIDIA GT 610 to the latest hardware, offering a gorgeous, cohesive user interface via the **Apollo Shell** and a custom **Openbox** environment.
 
-### Hyprland Mode (Minimum)
-| Component | Minimum |
-|-----------|---------|
-| CPU | Any x86_64 with 4+ cores |
-| RAM | 6 GB |
-| GPU | AMD Vega+ / Intel Gen 8+ / NVIDIA GTX 10xx+ |
-| Storage | 25 GB |
+## 📸 Features
 
----
+- **Apollo Shell**: A breathtaking, custom-built shell written in strict QML (`quickshell`). It features a modular Taskbar, macOS-style auto-hiding Dock, slide-in Sidebar, and rich widgets (App Menu, Weather, Hardware Monitors) without the bloat of traditional panels.
+- **Dual Engine**: 
+  - **Apollo Desktop (X11)**: Ultra-stable, blazing fast, Openbox-based. Perfect for legacy hardware and maximum compatibility. Uses ~350MB of RAM.
+  - **Hyprland (Wayland)**: The future. Available out of the box for supported modern hardware, delivering smooth animations and modern features.
+- **Deep Compatibility**: We actively maintain **modern kernel patches** (up to kernel 7.0+) for the legacy **NVIDIA 390xx** driver series, keeping older GPUs alive long past their end-of-life.
+- **Smart Installer**: Our **Calamares** extension automatically detects your GPU, VRAM, and RAM, intelligently selecting the best driver and desktop architecture (X11 vs Wayland) for your specific machine before you even install.
+- **Dynamic Theming**: First-class support for instant Dark/Light mode switching. A unified design system ensures that GTK3, GTK4, Qt5/6, and the shell always look perfectly cohesive.
 
-## 📦 Repository Structure
+## 🏗️ Structure
 
-```
-apollolinux/
-├── apollo-iso/              # ISO build system (archiso-based)
-├── apollo-pkgbuild/         # Custom PKGBUILDs (NVIDIA legacy, etc.)
-├── apollo-calamares/        # Calamares installer config & modules
-├── apollo-desktop/          # Apollo Desktop (Openbox fork + patches)
-├── apollo-shell/            # Apollo Shell (QuickShell panels & plugins)
-├── apollo-themes/           # GTK themes, icons, cursors, wallpapers
-├── apollo-welcome/          # First-boot welcome application
-├── apollo-control/          # Apollo Control Center
-└── docs/                    # Documentation
-```
+This Monorepo contains the entire Apollo OS stack:
 
----
+* `apollo-iso/` - Archiso profile to build the live USB/install media.
+* `apollo-shell/` - The QML source code for the Apollo Desktop shell.
+* `apollo-desktop/` - Core apps: Control Center, Welcome screen, Session tools, and Window Manager configs.
+* `apollo-themes/` - The unified Apollo design system (GTK, Qt, Openbox, Wallpapers, GRUB, Plymouth).
+* `apollo-calamares/` - Custom installer modules and branding.
+* `apollo-pkgbuild/` - Our custom Arch packages (including the legendary nvidia-390xx patched driver).
 
-## 🏗️ Building the ISO
+## 🚀 Building the ISO
 
-> Requirements: `archiso`, `git`, `base-devel`
+You can build the Apollo Linux live medium directly from Arch Linux:
 
 ```bash
+# Clone the repository
 git clone https://github.com/strayfodanator/apollolinux.git
-cd apollolinux/apollo-iso
-sudo ./build.sh
+cd apollolinux
+
+# Install archiso
+sudo pacman -S archiso
+
+# Build the ISO
+sudo bash apollo-iso/build.sh
 ```
 
-The ISO will be output to `apollo-iso/out/`.
+The resulting ISO will be placed in the `out/` directory.
 
----
+## 🛠️ Contributing
 
-## 🎨 Apollo Desktop
-
-Apollo Desktop is a complete desktop environment built on a heavily patched fork of **Openbox**, featuring:
-
-- **Snap Zones** — Drag windows to screen edges for tiling
-- **Apollo Shell panels** — Configurable top/bottom bars via GUI
-- **Comprehensive app stack** — File manager, terminal, text editor, screenshot tool, and more, all pre-configured
-- **Apollo theme** — A clean, dark, dynamic aesthetic. No AI-generated look.
-- **Icon Pack**: Papirus (GPL-3.0)
-- **Cursor**: Bibata (MIT)
-- **Font**: Fira Code Nerd Fonts (OFL)
-
----
-
-## 🌊 Hyprland Mode
-
-Coming once Apollo Desktop reaches 1.0 stability.
-
----
+Please read our [`CONTRIBUTING.md`](CONTRIBUTING.md) for details on our code of conduct, the development workflow, and how you can help test legacy hardware or expand the Apollo Shell.
 
 ## 📜 License
 
-- Apollo Linux build system & configs: **MIT**
-- Apollo Desktop (Openbox fork): **GPL-2.0** (upstream license retained)
-- Apollo Shell (QuickShell components): **MIT**
-- Third-party assets: see individual licenses in `apollo-themes/`
+Apollo Linux is open-source software licensed under the GPL-3.0 (except where noted, such as specific community patches or external dependencies).
 
 ---
-
-## 🤝 Contributing
-
-Contribution guidelines coming soon. The project is in early development.
-
----
-
-*Apollo Linux — Built for humans, not just enthusiasts.*
+*Developed with love by the Apollo Linux Team.*

@@ -30,10 +30,11 @@ sha256sums=('SKIP')
 package() {
     local _src="${srcdir}/apollolinux-main/apollo-desktop"
 
-    # ── Python apps ──────────────────────────────────────────────
+    # ── Apps & Scripts ───────────────────────────────────────────
     install -Dm755 "${_src}/apollo-welcome"      "${pkgdir}/usr/bin/apollo-welcome"
     install -Dm755 "${_src}/apollo-control"      "${pkgdir}/usr/bin/apollo-control"
     install -Dm755 "${_src}/apollo-session-menu" "${pkgdir}/usr/bin/apollo-session-menu"
+    install -Dm755 "${_src}/apollo-colorscheme"  "${pkgdir}/usr/bin/apollo-colorscheme"
 
     # ── Hardware detection script ─────────────────────────────────
     install -Dm755 "${srcdir}/apollolinux-main/apollo-iso/airootfs/etc/apollo/detect-hardware.sh" \

@@ -1,0 +1,221 @@
+/* Apollo Light — GTK3/4 Theme
+ * apollo-themes/gtk/apollo-light/gtk.css
+ *
+ * Companion light theme to Apollo-Dark.
+ * Same accent colors, white/sky background palette.
+ * Install to: /usr/share/themes/Apollo-Light/gtk-3.0/gtk.css
+ */
+
+/* ── Color tokens (light palette) ──────────────────────────────────────────── */
+@define-color window_bg_color         #F0F2F8;
+@define-color window_fg_color         #1A1D2E;
+@define-color view_bg_color           #FFFFFF;
+@define-color view_fg_color           #1A1D2E;
+@define-color headerbar_bg_color      #E8EAF0;
+@define-color headerbar_fg_color      #1A1D2E;
+@define-color headerbar_border_color  #CBD0DF;
+@define-color sidebar_bg_color        #E2E5EF;
+@define-color sidebar_fg_color        #1A1D2E;
+@define-color popover_bg_color        #FFFFFF;
+@define-color popover_fg_color        #1A1D2E;
+@define-color card_bg_color           #FFFFFF;
+@define-color card_fg_color           #1A1D2E;
+@define-color thumbnail_bg_color      #FFFFFF;
+@define-color thumbnail_fg_color      #1A1D2E;
+@define-color dialog_bg_color         #F0F2F8;
+@define-color dialog_fg_color         #1A1D2E;
+
+/* Apollo accent — same as dark mode */
+@define-color accent_bg_color         #6C8EFF;
+@define-color accent_fg_color         #FFFFFF;
+@define-color accent_color            #4F78FF;
+
+/* Destructive */
+@define-color destructive_bg_color    #E5534B;
+@define-color destructive_fg_color    #FFFFFF;
+@define-color destructive_color       #C0392B;
+
+/* Success */
+@define-color success_bg_color        #26A269;
+@define-color success_fg_color        #FFFFFF;
+@define-color success_color           #1B8A56;
+
+/* Warning */
+@define-color warning_bg_color        #CD9309;
+@define-color warning_fg_color        #1A1D2E;
+@define-color warning_color           #9A6F00;
+
+/* Error */
+@define-color error_bg_color          #E5534B;
+@define-color error_fg_color          #FFFFFF;
+@define-color error_color             #C0392B;
+
+/* Borders & separators */
+@define-color borders                 rgba(0,0,0,0.12);
+@define-color dark_fill               #CBD0DF;
+@define-color light_fill              #FFFFFF;
+
+/* ── Global reset ────────────────────────────────────────────────────────────── */
+* {
+    font-family: "FiraCode Nerd Font", "Noto Sans", sans-serif;
+    font-size: 11px;
+    -gtk-icon-style: regular;
+    outline-offset: 2px;
+}
+
+window, .background {
+    background-color: @window_bg_color;
+    color: @window_fg_color;
+}
+
+/* ── Header bar ─────────────────────────────────────────────────────────────── */
+headerbar {
+    background-color: @headerbar_bg_color;
+    color: @headerbar_fg_color;
+    border-bottom: 1px solid @headerbar_border_color;
+    min-height: 46px;
+    padding: 0 8px;
+}
+
+headerbar entry,
+headerbar spinbutton,
+headerbar button,
+headerbar separator {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.titlebar,
+headerbar .title {
+    font-weight: bold;
+    font-size: 11px;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────────── */
+button {
+    background-color: @view_bg_color;
+    border: 1px solid @borders;
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: @window_fg_color;
+    transition: all 150ms ease;
+}
+button:hover {
+    background-color: @sidebar_bg_color;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+button:active {
+    background-color: @dark_fill;
+}
+button.suggested-action {
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
+    border-color: shade(@accent_bg_color, 0.9);
+}
+button.destructive-action {
+    background-color: @destructive_bg_color;
+    color: @destructive_fg_color;
+}
+/* Window control buttons */
+button.titlebutton.close    { background-color: #FF5F56; }
+button.titlebutton.maximize { background-color: #27C940; }
+button.titlebutton.minimize { background-color: #FFBD2E; }
+button.titlebutton:hover { opacity: 0.85; box-shadow: 0 0 0 2px rgba(0,0,0,0.15); }
+
+/* ── Entry / text fields ─────────────────────────────────────────────────────── */
+entry {
+    background-color: @view_bg_color;
+    border: 1px solid @borders;
+    border-radius: 6px;
+    padding: 5px 8px;
+    color: @window_fg_color;
+}
+entry:focus {
+    border-color: @accent_color;
+    box-shadow: 0 0 0 2px alpha(@accent_bg_color, 0.25);
+}
+
+/* ── Lists ──────────────────────────────────────────────────────────────────── */
+list, listbox {
+    background-color: @view_bg_color;
+    border: 1px solid @borders;
+    border-radius: 8px;
+}
+row:hover { background-color: alpha(@accent_bg_color, 0.08); }
+row:selected { background-color: alpha(@accent_bg_color, 0.18); color: @accent_color; }
+
+/* ── Scrollbars ─────────────────────────────────────────────────────────────── */
+scrollbar {
+    background-color: transparent;
+    border: none;
+}
+scrollbar slider {
+    background-color: rgba(100,110,130,0.35);
+    border-radius: 6px;
+    min-width: 6px;
+    min-height: 6px;
+    margin: 2px;
+}
+scrollbar slider:hover { background-color: rgba(100,110,130,0.55); }
+
+/* ── Sidebar ────────────────────────────────────────────────────────────────── */
+.sidebar { background-color: @sidebar_bg_color; }
+.sidebar row:selected { background-color: alpha(@accent_bg_color, 0.15); }
+
+/* ── Progressbar ────────────────────────────────────────────────────────────── */
+progressbar trough { background-color: @dark_fill; border-radius: 4px; }
+progressbar progress { background-color: @accent_bg_color; border-radius: 4px; }
+
+/* ── Switch ──────────────────────────────────────────────────────────────────── */
+switch {
+    background-color: @dark_fill;
+    border-radius: 12px;
+    border: 1px solid @borders;
+}
+switch:checked { background-color: @accent_bg_color; }
+switch slider {
+    background-color: @view_bg_color;
+    border-radius: 10px;
+    margin: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* ── Tooltips ───────────────────────────────────────────────────────────────── */
+tooltip {
+    background-color: #1A1D2E;
+    color: #E8EAF0;
+    border-radius: 6px;
+    padding: 4px 8px;
+    border: 1px solid #2e3248;
+}
+
+/* ── Menu / Popover ─────────────────────────────────────────────────────────── */
+popover.background {
+    background-color: @popover_bg_color;
+    border: 1px solid @borders;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+menu {
+    background-color: @popover_bg_color;
+    border: 1px solid @borders;
+    border-radius: 8px;
+    padding: 4px 0;
+}
+menuitem { padding: 5px 12px; border-radius: 4px; }
+menuitem:hover { background-color: alpha(@accent_bg_color, 0.12); }
+menuitem:selected { background-color: @accent_bg_color; color: @accent_fg_color; }
+
+/* ── Notebook tabs ──────────────────────────────────────────────────────────── */
+notebook header {
+    background-color: @headerbar_bg_color;
+    border-bottom: 1px solid @borders;
+}
+notebook tab {
+    padding: 6px 14px;
+    border-radius: 0;
+}
+notebook tab:checked {
+    border-bottom: 2px solid @accent_bg_color;
+    color: @accent_color;
+}

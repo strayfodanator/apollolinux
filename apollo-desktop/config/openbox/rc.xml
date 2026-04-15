@@ -297,6 +297,12 @@
         <command>apollo-control</command>
       </action>
     </keybind>
+    <keybind key="Super-t">
+      <!-- Apollo Color Scheme Toggle -->
+      <action name="Execute">
+        <command>apollo-colorscheme toggle</command>
+      </action>
+    </keybind>
 
     <!-- Screenshot -->
     <keybind key="Print">

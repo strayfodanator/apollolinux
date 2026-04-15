@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+#
+# Apollo Linux — apollo-colorscheme
+# Toggle or set the color scheme (dark/light) for the entire desktop.
+#
+# Usage:
+#   apollo-colorscheme dark
+#   apollo-colorscheme light
+#   apollo-colorscheme toggle
+#
+# Affects:
+#   - Wallpaper (feh on X11, hyprctl on Wayland)
+#   - GTK2/3/4 theme
+#   - Apollo Shell JSON config (colorScheme key)
+#   - Apollo Shell reload
+
+set -euo pipefail
+
+SHELL_CFG="${XDG_CONFIG_HOME:-$HOME/.config}/apollo-shell/apollo-shell.json"
+APOLLO_CFG="${XDG_CONFIG_HOME:-$HOME/.config}/apollo"
+WP_DARK="/usr/share/apollo/wallpapers/apollo-dark.png"
+WP_LIGHT="/usr/share/apollo/wallpapers/apollo-light.png"
+GTK_DARK="Apollo-Dark"
+GTK_LIGHT="Apollo-Light"
+
+# ── Read current scheme ───────────────────────────────────────────────────────
+current_scheme() {
+    if [ -f "$SHELL_CFG" ]; then
+        python3 -c "import json,sys; d=json.load(open('$SHELL_CFG')); print(d.get('colorScheme','dark'))" 2>/dev/null || echo "dark"
+    else
+        echo "dark"
+    fi
+}
+
+# ── Parse argument ────────────────────────────────────────────────────────────
+ACTION="${1:-toggle}"
+if [ "$ACTION" = "toggle" ]; then
+    CURRENT=$(current_scheme)
+    [ "$CURRENT" = "dark" ] && ACTION="light" || ACTION="dark"
+fi
+
+case "$ACTION" in
+    dark|light) ;;
+    *) echo "Usage: $0 [dark|light|toggle]" >&2; exit 1 ;;
+esac
+
+# ── Select assets ─────────────────────────────────────────────────────────────
+if [ "$ACTION" = "dark" ]; then
+    WALLPAPER="$WP_DARK"
+    GTK_THEME="$GTK_DARK"
+else
+    WALLPAPER="$WP_LIGHT"
+    GTK_THEME="$GTK_LIGHT"
+fi
+
+echo "→ Apollo: Switching to $ACTION mode..."
+
+# ── 1. Wallpaper ──────────────────────────────────────────────────────────────
+if [ -n "${WAYLAND_DISPLAY:-}" ]; then
+    # Hyprland: use hyprctl hyprpaper
+    hyprctl hyprpaper wallpaper ",$WALLPAPER" 2>/dev/null || true
+else
+    # X11: use feh
+    command -v feh &>/dev/null && feh --no-fehbg --bg-fill "$WALLPAPER"
+fi
+
+# ── 2. GTK2 ───────────────────────────────────────────────────────────────────
+cat > "$HOME/.gtkrc-2.0" <<EOF
+gtk-theme-name="$GTK_THEME"
+gtk-icon-theme-name="Papirus-Dark"
+gtk-cursor-theme-name="Bibata-Modern-Classic"
+gtk-cursor-theme-size=24
+gtk-font-name="FiraCode Nerd Font 11"
+EOF
+
+# ── 3. GTK3 ───────────────────────────────────────────────────────────────────
+mkdir -p "$HOME/.config/gtk-3.0"
+python3 -c "
+import configparser, os
+cfg = configparser.ConfigParser()
+path = os.path.expanduser('~/.config/gtk-3.0/settings.ini')
+cfg.read(path)
+if 'Settings' not in cfg: cfg['Settings'] = {}
+cfg['Settings']['gtk-theme-name'] = '$GTK_THEME'
+cfg['Settings']['gtk-application-prefer-dark-theme'] = '1' if '$ACTION' == 'dark' else '0'
+with open(path,'w') as f: cfg.write(f)
+"
+
+# ── 4. GTK4 / Adwaita ────────────────────────────────────────────────────────
+if command -v gsettings &>/dev/null; then
+    gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME" 2>/dev/null || true
+    if [ "$ACTION" = "dark" ]; then
+        gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
+    else
+        gsettings set org.gnome.desktop.interface color-scheme "prefer-light" 2>/dev/null || true
+    fi
+fi
+
+# ── 5. Qt5ct ─────────────────────────────────────────────────────────────────
+QT5CT_CFG="$HOME/.config/qt5ct/qt5ct.conf"
+if [ -f "$QT5CT_CFG" ]; then
+    SCHEME_FILE="/usr/share/apollo/qt5ct/apollo-${ACTION}.conf"
+    [ -f "$SCHEME_FILE" ] && \
+        python3 -c "
+import configparser
+cfg = configparser.ConfigParser()
+cfg.read('$QT5CT_CFG')
+if 'Appearance' not in cfg: cfg['Appearance'] = {}
+cfg['Appearance']['color_scheme_path'] = '$SCHEME_FILE'
+with open('$QT5CT_CFG','w') as f: cfg.write(f)
+" 2>/dev/null || true
+fi
+
+# ── 6. Update apollo-shell.json ───────────────────────────────────────────────
+if [ -f "$SHELL_CFG" ]; then
+    python3 -c "
+import json
+with open('$SHELL_CFG') as f: d = json.load(f)
+d['colorScheme'] = '$ACTION'
+if 'wallpaper' in d:
+    d['wallpaper']['default'] = '$WALLPAPER'
+with open('$SHELL_CFG','w') as f: json.dump(d, f, indent=2)
+" 2>/dev/null || true
+fi
+
+# ── 7. Write wallpaper to apollo config ───────────────────────────────────────
+mkdir -p "$APOLLO_CFG"
+echo "$WALLPAPER" > "$APOLLO_CFG/wallpaper"
+echo "$ACTION" > "$APOLLO_CFG/colorscheme"
+
+# ── 8. Reload Apollo Shell ───────────────────────────────────────────────────
+apollo-shell-action reload 2>/dev/null || true
+
+echo "✓ Apollo: Switched to $ACTION mode."
+echo "  Wallpaper: $WALLPAPER"
+echo "  GTK theme: $GTK_THEME"
