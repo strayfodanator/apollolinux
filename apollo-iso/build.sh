@@ -106,7 +106,8 @@ build_driver_cache() {
 
     log_info "Downloading driver packages to cache..."
     if [[ ${#driver_pkgs[@]} -gt 0 ]]; then
-        pacman --noconfirm --downloadonly --cachedir "${cache_dir}" \
+        # Use 'yes' to auto-select the default provider (e.g. for ambiguous 'nvidia' package)
+        yes "" | pacman --noconfirm --downloadonly --cachedir "${cache_dir}" \
             -Sw "${driver_pkgs[@]}" 2>/dev/null || \
             log_warn "Some packages may not be cached (check AUR/custom repo for Apollo packages)"
     fi
@@ -124,15 +125,16 @@ build_iso() {
     log_step "Building Apollo Linux ISO"
 
     local mkarchiso_args=(
-        -v
         -w "${WORK_DIR}"
         -o "${OUTPUT_DIR}"
-        "${PROFILE_DIR}"
     )
 
-    if [[ ${VERBOSE} -eq 0 ]]; then
-        mkarchiso_args=("${mkarchiso_args[@]//-v}")
+    if [[ ${VERBOSE} -eq 1 ]]; then
+        mkarchiso_args+=("-v")
     fi
+
+    # Append profile dir last
+    mkarchiso_args+=("${PROFILE_DIR}")
 
     mkdir -p "${OUTPUT_DIR}" "${WORK_DIR}"
     mkarchiso "${mkarchiso_args[@]}"
