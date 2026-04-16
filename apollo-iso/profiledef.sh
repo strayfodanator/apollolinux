@@ -27,7 +27,6 @@ airootfs_image_tool_options=(
     '-comp' 'zstd'
     '-Xcompression-level' '22'
     '-b' '1048576'
-    '-Xlong-distance'
 )
 
 bootstrap_tarball_compression=('zstd' '-c' '-T0' '--auto-threads=logical' '--long' '-19')
