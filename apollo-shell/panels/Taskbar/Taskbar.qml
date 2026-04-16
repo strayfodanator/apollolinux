@@ -14,6 +14,14 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import "../../widgets/WindowList"
+import "../../widgets/SystemTray"
+import "../../widgets/VolumeControl"
+import "../../widgets/NetworkStatus"
+import "../../widgets/BatteryIndicator"
+import "../../widgets/Clock"
+import "../../widgets/AppMenu"
+
 PanelWindow {
     id: taskbar
 

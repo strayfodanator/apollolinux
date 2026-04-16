@@ -1,4 +1,8 @@
 /* Apollo Light — GTK3/4 Theme
+ * (Requires adw-gtk3 or Adwaita natively)
+ */
+@import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained.css");
+/*
  * apollo-themes/gtk/apollo-light/gtk.css
  *
  * Companion light theme to Apollo-Dark.

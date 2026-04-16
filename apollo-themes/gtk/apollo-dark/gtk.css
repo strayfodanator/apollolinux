@@ -1,5 +1,8 @@
 /*
  * Apollo Dark — GTK3/GTK4 Theme
+ * (Requires adw-gtk3 or Adwaita natively)
+ */
+@import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css");
  * Part of Apollo Linux Desktop
  *
  * Based on: adw-gtk3 (LGPL-2.1+)

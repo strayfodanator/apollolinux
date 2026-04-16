@@ -12,6 +12,11 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+import "../../widgets/WorkspacePager"
+import "../../widgets/ActiveWindowTitle"
+import "../../widgets/NotificationBell"
+import "../../widgets/Clock"
+
 PanelWindow {
     id: topbar
 
