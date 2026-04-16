@@ -73,6 +73,9 @@ mesa-utils
 libva
 libva-utils
 vulkan-icd-loader
+lightdm
+lightdm-gtk-greeter
+
 
 # ── Apollo Desktop (Openbox-based) ────────────────────────────────────────────
 openbox
